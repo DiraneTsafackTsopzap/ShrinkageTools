@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+option csharp_namespace = "GrpcShrinkageServiceTraining.Protobuf";
+
+// Représente un UUID applicatif (Guid côté C#)
+message AppUuid {
+  string value = 1;
+}

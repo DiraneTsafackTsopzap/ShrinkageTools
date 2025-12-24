@@ -1,0 +1,6 @@
+@ShrinkageGrpcClientApi_HostAddress = http://localhost:5213
+
+GET {{ShrinkageGrpcClientApi_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

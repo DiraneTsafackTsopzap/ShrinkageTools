@@ -1,0 +1,40 @@
+﻿@page "/shrinkage/{ActiveTab?}"
+@using BlazorLayout.Pages.Components.Shared
+@using BlazorLayout.Pages.Components.Shrinkage.User
+@using BlazorLayout.Pages.Components.Tabs
+@using BlazorLayout.StateManagement
+
+
+
+@inherits StatefulComponent<Shrinkage.StateT> 
+
+<h1>@Localizer["shrinkage_welcome_message"]</h1>
+
+ <div class="tab-pane fade show active" role="tabpanel">
+    @if (errorMessage is not null)
+    {
+        <div class="alert alert-danger mt-2">
+            @errorMessage
+        </div>
+    }
+    @if (!isUserLoaded)
+    {
+        <Loader ShowLoading="@(isUserLoaded)" Message="@Localizer["shrinkage_loader_message"]"/>
+    }
+    else
+    {
+       if (State.CurrentUser != null)
+        {
+            <div class="container-fluid px-3 @(errorMessage is not null ? "disabled" : "")">
+                <FieldsetWithTabs ActiveTabKey="@ActiveTab" OnChange="@SwitchTab">
+                    <Tab Label="@Localizer["shrinkage_user_activities"]" Key="activities">
+                       <ManageActivities/> 
+                    </Tab>
+                    <Tab Label="@Localizer["shrinkage_absences"]" Key="absences">
+                         <ManageAbsences/> 
+                    </Tab>
+                </FieldsetWithTabs>
+            </div>
+        } 
+    }
+</div> 

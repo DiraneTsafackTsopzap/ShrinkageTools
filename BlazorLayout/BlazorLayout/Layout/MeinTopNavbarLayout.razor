@@ -1,0 +1,27 @@
+﻿@using BlazorLayout.Layout.MenuLayout
+@inherits LayoutComponentBase
+
+<div class="d-flex flex-column h-100">
+
+    @* Top NavBar *@
+
+    <TopNavMenu />
+    @* Main Content Area  *@
+    <main class="flex-grow-1 container-xxl mt-3">
+
+        @Body
+
+    </main>
+
+
+    @* Footer *@
+
+    <footer class="flex-shrink-0">
+
+        <TopNavFooter />
+    </footer>
+</div>
+
+@code {
+
+}

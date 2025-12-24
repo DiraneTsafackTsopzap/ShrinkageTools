@@ -1,0 +1,20 @@
+﻿@if (ShowLoading)
+{
+    <div style="display: inline-flex; align-items: center; width: 100%;">
+        <div class="spinner-border" role="status">
+            <span class="sr-only"></span>
+        </div>
+        <span style="margin-left: 10px">
+            @Message
+        </span>
+    </div>
+}
+
+@code
+{
+    [Parameter]
+    public bool ShowLoading { get; set; }
+
+    [Parameter]
+    public string? Message { get; set; }
+}

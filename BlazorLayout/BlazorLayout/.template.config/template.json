@@ -1,0 +1,38 @@
+{
+  "$schema": "http://json.schemastore.org/template",
+  "author": "Dirane Tsafack Tsopzap",
+  "classifications": [
+    "Web",
+    "Blazor",
+    "WebAssembly"
+  ],
+  "identity": "DiraneTsafackTsopzap.BlazorWasmLayout",
+  "name": "Blazor WebAssembly With Layout",
+  "shortName": "BlazorWasmLayout",
+  "sourceName": "BlazorLayout",
+  "tags": {
+    "language": "C#",
+    "type": "project"
+  },
+  "guids": [
+   "FAE04EC0-301F-11D3-BF4B-00C04F79EFBC",
+   "95ED20D6-C626-442B-A63E-DDF73B6E1B79",
+   "1C162545-182B-4D21-BF8C-1032C9F0FAF7"
+  ],
+  "preferNameDirectory": true,
+  "sources": [
+    {
+      "exclude": [
+        ".git/**",
+        ".github/**",
+        ".gitignore",
+        ".gitattributes",
+        ".template.config/**",
+        ".vs/**",
+        "**/bin/**",
+        "**/obj/**",
+        "README.md"
+      ]
+    }
+  ]
+}

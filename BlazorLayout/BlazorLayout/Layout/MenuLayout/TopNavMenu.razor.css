@@ -1,0 +1,16 @@
+﻿.navStyle {
+    background-color: var(--cf-theme-850); /* Applies a theme-specific background color */
+}
+
+.nav-item {
+    --bs-navbar-hover-color: var(--cf-theme-400); /* Sets hover color for navbar items */
+    --bs-nav-link-hover-color: var(--cf-theme-400); /* Sets hover color for nav links */
+}
+
+.dropdown-menu {
+    background-color: var(--cf-theme-900); /* Sets a custom background color for the dropdown menu */
+}
+
+.dropdown:has(.nav-link.active) .dropdown-toggle {
+    color: var(--bs-navbar-active-color); /* Changes color of dropdown toggle when an item is active */
+}

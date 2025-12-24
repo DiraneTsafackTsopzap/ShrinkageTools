@@ -1,0 +1,96 @@
+syntax = "proto3";
+
+option csharp_namespace = "GrpcShrinkageServiceTraining.Protobuf";
+
+import "Protos/app_uuid.proto";
+import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
+
+
+service ShrinkageProtoService {
+
+// 0 - comment s'appelle notre service ? 
+  rpc GetUserByEmail (GetUserByEmailRequest) returns (GetUserByEmailResponse);
+
+  // get Teams
+   rpc GetTeams(GetTeamsRequest) returns (GetTeamsResponse) {}
+
+}
+
+message GetUserByEmailRequest {
+  AppUuid correlation_id = 1;  // 1- Quel est le uiid utiliser par Lowell ? 
+  string email = 2;
+}
+
+message GetUserByEmailResponse { // 2- Quel est le message de reponse ? , que doit il contenir ? 
+  User user = 1;
+}
+
+message PaidTime {
+
+  AppUuid id = 1;
+  
+  google.protobuf.Duration paid_time_monday = 2;    // 3- Le temps ici est Duration ou Timestamp ?
+
+  google.protobuf.Duration paid_time_tuesday = 3;
+  
+  google.protobuf.Duration paid_time_wednesday = 4;
+  
+  google.protobuf.Duration paid_time_thursday = 5;
+  
+  google.protobuf.Duration paid_time_friday = 6;
+  
+  google.protobuf.Duration paid_time_saturday = 7;
+
+  google.protobuf.Timestamp valid_from = 8;    // 4- Le valid_from est un Timestamp ou une Duration ?
+  
+  google.protobuf.Timestamp created_at = 9;
+
+  string created_by = 10;
+}
+
+message User {
+
+  AppUuid user_id = 1;
+
+  AppUuid team_id = 2;
+
+  string email = 3;
+
+  google.protobuf.Timestamp created_at = 4; // 5- Le created_at est un Timestamp ou une Duration ?
+
+  string created_by = 5;
+
+  repeated PaidTime paid_time = 6; // 6- Quel est le type de paid_time ? repeated veut dire que le user peut avoir un ou plusieurs PaidsTimes
+}
+
+message GetTeamsRequest {
+
+  AppUuid correlation_id = 1;
+}
+
+message GetTeamsResponse {
+
+  repeated Team teams = 1;
+}
+
+message Team {
+
+  AppUuid id = 1;
+
+  string name = 2;
+
+  repeated AppUuid team_lead_ids = 3;
+}
+
+
+
+// 3- Definir les autres Messages necessaires et 
+
+// 4- Build ou Rebuild le Projet pour Generer les Classes C#
+
+// 5- Implementer les repository d'abord --->> Dossier DataAccess.CRUD.Repositories\ShrinkageProtoServiceRepository.cs
+
+// 6- Implementer le Service ensuite --->> Dossier Services.Shrinkage.Implementations\ShrinkageProtoService.cs
+
+//7- Definir la table ou seront stockers mes etudiants  ds mon fichier test.yaml 

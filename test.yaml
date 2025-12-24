@@ -1,0 +1,51 @@
+version: "3.9"
+
+services:
+  postgres-service:
+    image: postgres:16
+    container_name: postgres-container
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_DB: shrinkage_database
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./meindatabase/init.sql:/docker-entrypoint-initdb.d/01-init.sql
+
+    ports:
+      - "5432:5432"
+
+    networks:
+      - meinnetwork
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: pgadmin-container
+    restart: unless-stopped
+
+    environment:
+      PGADMIN_DEFAULT_EMAIL: diraneserges@gmail.com
+      PGADMIN_DEFAULT_PASSWORD: diraneserges
+
+    ports:
+      - "5050:80"
+
+    depends_on:
+      - postgres-service
+
+    networks:
+      - meinnetwork
+
+volumes:
+  postgres_data:
+
+networks:
+  meinnetwork:
+    driver: bridge
+
+
+# docker-compose -f test.yaml down -v
+# docker-compose -f test.yaml up -d

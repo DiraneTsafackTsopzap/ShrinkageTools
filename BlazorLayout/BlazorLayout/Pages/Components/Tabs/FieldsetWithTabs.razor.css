@@ -1,0 +1,64 @@
+﻿
+nav {
+    display: flex;
+    padding: 10px 1em 0 1em;
+    gap: 2px 4px;
+    flex-wrap: wrap-reverse;
+    user-select: none;
+    text-transform: capitalize;
+}
+
+ul {
+    display: contents;
+}
+
+li {
+    flex: 0 0 auto;
+    display: block;
+    padding: 2px 5px 0;
+    border: 1px solid #6c6c6c;
+    border-bottom: none;
+    position: relative;
+    cursor: pointer;
+    outline-color: var(--lowell-orange);
+    &[x-active]
+
+{
+    cursor: unset;
+    font-weight: bold;
+    &::after
+
+{
+    content: "";
+    display: block;
+    height: 4px;
+    position: absolute;
+    width: 100%;
+    bottom: -2px;
+    background: white;
+    left: 0;
+}
+
+}
+}
+
+fieldset {
+    display: flex;
+    flex-flow: column;
+    overflow-y: auto;
+    padding: 0.5rem;
+    gap: 0.5rem;
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+    line-height: normal;
+}
+
+    /* Hide scrollbar for Chrome, Safari, Opera */
+    fieldset ::-webkit-scrollbar {
+        display: none;
+    }
+
+    fieldset > ::deep * {
+        margin-top: 0 !important;
+        margin-bottom: 0 !important;
+    }

@@ -1,0 +1,112 @@
+﻿@implements IHaveTabs
+
+@*
+ * Provide tabs to this component by rendering Tabs inside of it. E.g:
+ *     <FieldsetWithTabs ActiveTabKey="tab-2" OnChange="@HandleTabChange">
+ *         <Tab Label="Tab 1" Key="tab-1">
+ *             hello
+ *         </Tab>
+ *         <Tab Label="Tab 2" Key="tab-2">
+ *             bye bye
+ *         </Tab>
+ *     </FieldsetWithTabs>
+ * The tabs' contents will conditionally render inside the fieldset.
+ * Tab keys are optional as is ActiveTabKey and OnChange.
+ * If no tab with Key=ActiveTabKey exists, the first tab activates
+ * and, if ActiveTabKey was set, OnChange will get called as well.
+ * This means that it's allowed to set ActiveTabKey to invalid values,
+ * as may happen if the key is provided by routing or the user.
+ * Tab keys must be unique within the list of tabs.
+ *@
+
+<CascadingValue Value="this" IsFixed>
+    @ChildContent
+</CascadingValue>
+
+<nav>
+    <ul>
+        @foreach (var tab in tabs)
+        {
+            <li class="fswt-tab" x-active="@(tab == activeTab)" tabindex="0" @onclick="() => SetActiveTab(tab)" @onkeydown="ev => SetActiveTab(tab, ev)">
+                @tab.Label
+            </li>
+        }
+    </ul>
+</nav>
+<fieldset style="flex: 1">
+    @activeTab?.ChildContent
+</fieldset>
+
+@code {
+
+    [Parameter, EditorRequired]
+    public RenderFragment ChildContent { get; init; } = null!;
+
+    /// <summary>
+    /// Specifies which <see cref="Tab"/> should be active.#
+    /// </summary>
+    [Parameter]
+    public string? ActiveTabKey { get; set; }
+
+    /// <summary>
+    /// Called with the new active tab's <see cref="Tab.Key"/>.
+    /// </summary>
+    [Parameter]
+    public Action<string?>? OnChange { get; init; }
+
+    private Tab[] tabs = [];
+    private Tab? activeTab;
+
+    private void SetActiveTab(Tab? tab, KeyboardEventArgs? ev = null, bool fire = true)
+    {
+        if (ev is { Code: not ("Space" or "Enter") }) return;
+        if (tab == activeTab && tab?.Key == ActiveTabKey) return;
+        activeTab = tab;
+        ActiveTabKey = tab?.Key;
+        if (fire && OnChange is not null)
+            OnChange(ActiveTabKey);
+    }
+
+    public void Register(Tab tab)
+    {
+        tabs = [.. tabs, tab];
+        if (tabs.Length is 1 && ActiveTabKey is null)
+            activeTab = tab;
+        else if (ActiveTabKey is not null && tab.Key == ActiveTabKey)
+            activeTab = tab;
+        StateHasChanged();
+    }
+
+    public void Unregister(Tab tab)
+    {
+        var index = Array.IndexOf(tabs, tab);
+        tabs = [.. tabs[..index], .. tabs[(index + 1)..]];
+        if (tab == activeTab)
+            activeTab = tabs.FirstOrDefault();
+        StateHasChanged();
+    }
+
+    public override async Task SetParametersAsync(ParameterView parameters)
+    {
+        var oldActiveTabKey = ActiveTabKey;
+        await base.SetParametersAsync(parameters);
+        if (tabs is not [] && oldActiveTabKey != ActiveTabKey)
+        {
+            var tab = tabs.SingleOrDefault(tab => tab.Key == ActiveTabKey);
+            SetActiveTab(tab ?? tabs[0], fire: tab is null);
+        }
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender && activeTab is null && ActiveTabKey is not null)
+        {
+            // correct invalid input
+            SetActiveTab(tabs.FirstOrDefault());
+            StateHasChanged();
+        }
+
+        base.OnAfterRender(firstRender);
+    }
+
+}
