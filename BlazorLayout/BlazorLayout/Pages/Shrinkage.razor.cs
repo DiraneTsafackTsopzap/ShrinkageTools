@@ -1,4 +1,5 @@
-﻿using BlazorLayout.Extensions;
+﻿using BlazorLayout.Exceptions;
+using BlazorLayout.Extensions;
 using BlazorLayout.Gateways;
 using BlazorLayout.Modeles;
 using BlazorLayout.Stores;
@@ -31,6 +32,9 @@ namespace BlazorLayout.Pages
         public UserByEmailStore UserStore { get; set; } = null!;
 
         [Inject]
+        private TeamsStore TeamsStore { get; set; } = null!;
+
+        [Inject]
         private ShrinkageApi ShrinkageApi { get; init; } = null!;
 
         private void SwitchTab(string tabName)
@@ -40,6 +44,8 @@ namespace BlazorLayout.Pages
         public sealed record StateT
         {
             public UserDto? CurrentUser { get; init; }
+
+            public IReadOnlyList<TeamDto> Teams { get; init; } = null!;
         }
 
         protected override StateT BuildState()
@@ -47,6 +53,7 @@ namespace BlazorLayout.Pages
             return new StateT
             {
                 CurrentUser = UserStore.User,
+                Teams = TeamsStore.Teams ?? [],
             };
         }
 
@@ -61,9 +68,19 @@ namespace BlazorLayout.Pages
 
                 userEmailAddress = authState.User.GetId();
 
+                // Ensure GetUserByEmail
                 await ShrinkageApi.EnsureGetUserByEmail(userEmailAddress, forceRefresh: false, TimeoutToken(Timeout));
 
+                // Ensure GetTeams
+                await ShrinkageApi.EnsureGetTeams(userEmailAddress, forceRefresh: false, TimeoutToken(Timeout));
+
+                // Attention : Toujours Charger les Stores Avant d'appeler le isUserLoaded
+
+
                 isUserLoaded = true;
+
+            
+
 
                 if (State.CurrentUser!.TeamId is null)
                 {

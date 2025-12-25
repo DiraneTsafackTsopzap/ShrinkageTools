@@ -111,13 +111,3 @@ namespace ShrinkageGrpcClientApi.Controllers
     }
 }
 
-// POST /api/shrinkage/etudiant
-// POST http://localhost:5000/api/shrinkage/etudiant
-
-//{
-//  "email": "diraneserges@gmail.com",
-//  "nom": "Serges Kenfack",
-//  "prenom": "Max",
-//  "telephone": "+491638070334"
-//}
-

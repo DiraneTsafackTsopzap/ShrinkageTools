@@ -44,6 +44,7 @@ builder.Services.AddScoped<AuthenticationStateProvider, FakeAuthenticationStateP
 // STORES & API
 // =======================
 builder.Services.AddSingleton<UserByEmailStore>();
+builder.Services.AddSingleton<TeamsStore>();
 builder.Services.AddSingleton<ShrinkageApi>();
 
 
