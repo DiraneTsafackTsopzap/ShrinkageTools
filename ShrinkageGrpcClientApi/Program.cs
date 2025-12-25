@@ -1,21 +1,44 @@
-
-using GrpcShrinkageServiceTraining.Protobuf;
+﻿using GrpcShrinkageServiceTraining.Protobuf;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+// =======================
+// SERVICES
+// =======================
 
+// Controllers (API REST)
 builder.Services.AddControllers();
-// Enregistrement du client gRPC
+
+// CORS → autoriser le frontend Blazor
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowBlazor", policy =>
+    {
+        policy
+            .WithOrigins("http://localhost:7000") // FRONTEND
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
+
+// Client gRPC
 builder.Services.AddGrpcClient<ShrinkageProtoService.ShrinkageProtoServiceClient>(o =>
 {
     o.Address = new Uri("http://localhost:9090");
 });
+
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// =======================
+// MIDDLEWARE
+// =======================
 
 app.UseHttpsRedirection();
+
+app.UseRouting();
+
+// ⚠️ CORS AVANT Authorization
+app.UseCors("AllowBlazor");
 
 app.UseAuthorization();
 

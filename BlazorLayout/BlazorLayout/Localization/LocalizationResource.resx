@@ -117,8 +117,38 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="correlation_id_G" xml:space="preserve">
+    <value>CorrelationId: '{0}'</value>
+  </data>
+  <data name="http_5XX" xml:space="preserve">
+    <value>Unknown server error ({0:D}).</value>
+  </data>
+  <data name="http_400" xml:space="preserve">
+    <value>(bad_request)</value>
+  </data>
+  <data name="http_403" xml:space="preserve">
+    <value>(Access denied)</value>
+  </data>
+  <data name="http_404" xml:space="preserve">
+    <value>(not_found)</value>
+  </data>
+  <data name="http_500" xml:space="preserve">
+    <value>Internal server error</value>
+  </data>
+  <data name="http_502" xml:space="preserve">
+    <value>Broken connection</value>
+  </data>
+  <data name="http_503" xml:space="preserve">
+    <value>Server is down</value>
+  </data>
+  <data name="http_504" xml:space="preserve">
+    <value>Network timeout establishing connection</value>
+  </data>
   <data name="shrinkage_absences" xml:space="preserve">
     <value>Absences</value>
+  </data>
+  <data name="shrinkage_error_get_user_email" xml:space="preserve">
+    <value>Failed to get User</value>
   </data>
   <data name="shrinkage_loader_message" xml:space="preserve">
     <value>Loading</value>

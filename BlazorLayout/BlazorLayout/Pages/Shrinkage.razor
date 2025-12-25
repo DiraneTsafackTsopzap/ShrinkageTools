@@ -25,6 +25,7 @@
     {
        if (State.CurrentUser != null)
         {
+            
             <div class="container-fluid px-3 @(errorMessage is not null ? "disabled" : "")">
                 <FieldsetWithTabs ActiveTabKey="@ActiveTab" OnChange="@SwitchTab">
                     <Tab Label="@Localizer["shrinkage_user_activities"]" Key="activities">
