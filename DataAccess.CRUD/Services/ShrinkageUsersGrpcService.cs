@@ -1,6 +1,4 @@
-﻿using System;
-using System.Runtime.InteropServices;
-using DataAccess.CRUD.Extensions;
+﻿using DataAccess.CRUD.Extensions;
 using DataAccess.CRUD.Modeles;
 using DataAccess.CRUD.Repositories;
 using DataAccess.CRUD.Repositories.TeamsRepository;
@@ -132,7 +130,7 @@ namespace DataAccess.CRUD.Services
 
 
         // Save Activity
-        public async Task<SaveActivityResponse> SaveActivity(SaveActivityRequest request, ServerCallContext context)
+        public override async Task<SaveActivityResponse> SaveActivity(SaveActivityRequest request, ServerCallContext context)
         {
             if (!request.UserId.TryParseToGuidNotNullOrEmpty(out var userId))
             {
@@ -190,8 +188,11 @@ namespace DataAccess.CRUD.Services
                 Id = activityId,
                 UserId = userId,
                 TeamId = teamId,
-                StartedAt = userActivity.DateTimeRange.StartedAt!.ToDateTime().ConvertUtcToGermanDateTime(),
-                StoppedAt = userActivity.DateTimeRange?.StoppedAt?.ToDateTime().ConvertUtcToGermanDateTime(),
+                StartedAt = userActivity.DateTimeRange.StartedAt!.ToDateTime().ToUniversalTime(),
+                StoppedAt = userActivity.DateTimeRange?.StoppedAt?.ToDateTime().ToUniversalTime(),
+
+                //StartedAt = userActivity.DateTimeRange.StartedAt!.ToDateTime().ConvertUtcToGermanDateTime(),
+                //StoppedAt = userActivity.DateTimeRange?.StoppedAt?.ToDateTime().ConvertUtcToGermanDateTime(),
                 ActivityType = userActivity.ActivityType.ConvertFromApiActivityType(),
                 ActivityTrackType = userActivity.ActivityTrackType.ConvertFromApiActivityTrackType(),
             };
@@ -226,7 +227,7 @@ namespace DataAccess.CRUD.Services
 
     }
 }
-   
+
 
 
 

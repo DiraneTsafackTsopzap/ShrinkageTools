@@ -142,7 +142,7 @@ INSERT INTO shrinkage_teams (
     '7a9b2f3e-6d41-4e91-b7a1-2c1c1a8f9a01',
     NOW(), NULL,
     'Backend Developer',
-    ARRAY['b4e5c1a9-8f72-4d6b-9a1c-3e7f5d0b2a66'],
+    ARRAY['b4e5c1a9-8f72-4d6b-9a1c-3e7f5d0b2a66']::uuid[],
     'BACKEND_DEV'
 )
 ON CONFLICT (id) DO NOTHING;
@@ -154,7 +154,7 @@ INSERT INTO shrinkage_teams (
     'c1f2b9d4-0c64-4c89-9d7b-8e91fcb6e7b2',
     NOW(), NULL,
     'Frontend Developer',
-    ARRAY['b4e5c1a9-8f72-4d6b-9a1c-3e7f5d0b2a66'],
+    ARRAY['b4e5c1a9-8f72-4d6b-9a1c-3e7f5d0b2a66']::uuid[],
     'FRONTEND_DEV'
 )
 ON CONFLICT (id) DO NOTHING;
@@ -181,3 +181,20 @@ INSERT INTO shrinkage_user_paid_time (
     'b4e5c1a9-8f72-4d6b-9a1c-3e7f5d0b2a66'
 )
 ON CONFLICT (id) DO NOTHING;
+
+--
+-- ============================
+-- INSERTIONS INITIALES: DAILY VALUE TEST : Tester la Methode SaveActivity il faudrai que ces valeurs soient presentes
+-- ============================
+INSERT INTO shrinkage_user_daily_values (
+    id, created_at, created_by, user_id, team_id, shrinkage_date, status, paid_time, paid_time_off, overtime, vacation_time
+) VALUES (
+    'd4c2f750-71a9-44ea-a71d-9a1c9f2037dd', -- ← UUID réel ici
+    NOW(),
+    'b4e5c1a9-8f72-4d6b-9a1c-3e7f5d0b2a66', -- created_by dirane
+    'b4e5c1a9-8f72-4d6b-9a1c-3e7f5d0b2a66', -- user_id
+    'c1f2b9d4-0c64-4c89-9d7b-8e91fcb6e7b2', -- team_id
+    '2025-12-26',
+    'Pending',
+    480, 0, 0, 0
+) ON CONFLICT (id) DO NOTHING;

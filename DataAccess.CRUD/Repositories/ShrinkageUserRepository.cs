@@ -2,7 +2,6 @@
 using DataAccess.CRUD.DapperContext;
 using DataAccess.CRUD.Modeles;
 using Npgsql;
-using System.Data;
 
 namespace DataAccess.CRUD.Repositories
 {
@@ -22,7 +21,7 @@ namespace DataAccess.CRUD.Repositories
             await connection.OpenAsync(token);
             return connection;
         }
-        public async Task<ShrinkageUserDataModel> Create( ShrinkageUserDataModel user,CancellationToken token)
+        public async Task<ShrinkageUserDataModel> Create(ShrinkageUserDataModel user, CancellationToken token)
 
         {
             await using var connection = await GetOpenConnectionAsync(token);
@@ -52,7 +51,7 @@ RETURNING
     created_at AS {nameof(ShrinkageUserDataModel.UserCreatedAt)};
 ";
 
-                var newUser = await connection.QueryFirstAsync<ShrinkageUserDataModel>( insertUserSql,user,transaction);
+                var newUser = await connection.QueryFirstAsync<ShrinkageUserDataModel>(insertUserSql, user, transaction);
 
                 // 2️⃣ Insert paid time
                 var insertPaidTimeSql = $@"
@@ -93,7 +92,7 @@ RETURNING
 
                 };
 
-                var paidTime = await connection.QueryFirstAsync<ShrinkageUserDataModel>( insertPaidTimeSql, paidTimeParams,transaction);
+                var paidTime = await connection.QueryFirstAsync<ShrinkageUserDataModel>(insertPaidTimeSql, paidTimeParams, transaction);
 
                 // 3️⃣ Merge , Retourne l'objet Shrinkage
                 newUser.PaidTimeId = paidTime.PaidTimeId;
@@ -118,7 +117,7 @@ RETURNING
             }
         }
 
-        public async Task<ShrinkageUserDataModel?> GetUserByEmail( string email,CancellationToken token)
+        public async Task<ShrinkageUserDataModel?> GetUserByEmail(string email, CancellationToken token)
         {
             var sql = $@"
 SELECT DISTINCT ON (su.id)
@@ -278,10 +277,19 @@ RETURNING
     activity_track_type     AS {nameof(ShrinkageActivityDataModel.ActivityTrackType)};
 ";
 
-            await using var connection = new NpgsqlConnection(dapperDbContext.Connection.ConnectionString);
-            await connection.OpenAsync(token);
+            try
+            {
+                await using var connection = new NpgsqlConnection(dapperDbContext.Connection.ConnectionString);
+                await connection.OpenAsync(token);
+                return await connection.QueryFirstAsync<ShrinkageActivityDataModel>(sql, activity);
+            }
+            catch (Exception ex)
+            {
 
-            return await connection.QueryFirstAsync<ShrinkageActivityDataModel>(sql, activity);
+                Console.WriteLine($"❌ Erreur dans CreateActivity: {ex.Message}");
+                throw;
+            }
+
         }
 
         public async Task<int> UpdateActivityById(ShrinkageActivityDataModel activity, CancellationToken token)
@@ -299,8 +307,7 @@ SET
 WHERE id = @{nameof(ShrinkageActivityDataModel.Id)};
 ";
 
-            await using var connection = new NpgsqlConnection(dapperDbContext.Connection.ConnectionString);
-            await connection.OpenAsync(token);
+            await using var connection = await GetOpenConnectionAsync(token);
 
             return await connection.ExecuteAsync(sql, activity);
         }

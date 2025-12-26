@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using DataAccess.CRUD.Extensions;
 using DataAccess.CRUD.ModeleDto;
 using DataAccess.CRUD.Modeles;
 using Google.Protobuf.WellKnownTypes;
@@ -17,7 +13,7 @@ namespace DataAccess.CRUD.Mapper
         {
             return new UserDto
             {
-                UserId = user.UserId.ToGuid(),  
+                UserId = user.UserId.ToGuid(),
                 TeamId = user.TeamId == null || user.TeamId.ToGuid() == Guid.Empty ? null : user.TeamId.ToGuid(),
                 Email = user.Email,
                 PaidTimeList = user.PaidTime.Select(x => new PaidTime
@@ -70,6 +66,7 @@ namespace DataAccess.CRUD.Mapper
             };
             return apiRequest;
         }
+
     }
 }
 
