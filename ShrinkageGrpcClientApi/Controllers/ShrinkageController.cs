@@ -108,6 +108,37 @@ namespace ShrinkageGrpcClientApi.Controllers
             }
         }
 
+
+        // Save Activity
+        [HttpPost("save-user-activity")]
+        public async Task SaveActivity([FromBody] SaveActivityDto input, CancellationToken cancellationToken)
+        {
+            using var __ = _logger.BeginScope(new Dictionary<string, object>
+            {
+                ["@Request"] = input,
+            });
+            try
+            {
+                var grpcRequest = GrpcMapper.MapToSaveActivityRequest(input);
+                await _grpcClient.SaveActivityAsync(grpcRequest, cancellationToken: cancellationToken);
+            }
+            catch (RpcException ex) when (ex.StatusCode == global::Grpc.Core.StatusCode.InvalidArgument)
+            {
+                _logger.LogError(ex, "Failed to save activity");
+                throw new BadHttpRequestException(ex.Message, StatusCodes.Status400BadRequest);
+            }
+            catch (RpcException ex) when (ex.StatusCode == global::Grpc.Core.StatusCode.NotFound)
+            {
+                _logger.LogError(ex, "Failed to save activity");
+                throw new BadHttpRequestException(ex.Message, StatusCodes.Status404NotFound);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to save activity");
+                throw new BadHttpRequestException("Failed to save activity", StatusCodes.Status500InternalServerError, ex);
+            }
+        }
+
     }
 }
 

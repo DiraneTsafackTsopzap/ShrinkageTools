@@ -15,6 +15,9 @@ service ShrinkageProtoService {
   // get Teams
    rpc GetTeams(GetTeamsRequest) returns (GetTeamsResponse) {}
 
+   // Save Activity
+   rpc SaveActivity(SaveActivityRequest) returns (SaveActivityResponse) {}
+
 }
 
 message GetUserByEmailRequest {
@@ -83,6 +86,76 @@ message Team {
   repeated AppUuid team_lead_ids = 3;
 }
 
+message SaveActivityRequest {
+  
+  AppUuid correlation_id = 1;
+
+  AppUuid user_id = 2;
+ 
+  Activity activity = 3;
+}
+message SaveActivityResponse {
+
+}
+
+message Activity {
+  
+  AppUuid id = 1;
+
+  ActivityType activity_type = 2;
+
+  ActivityTrackType activity_track_type = 3;
+
+  DateTimeRange date_time_range = 4;
+
+  AppUuid team_id = 5;
+
+  string created_by = 6;
+
+  string updated_by = 7;
+}
+enum ActivityType {
+  ACTIVITY_TYPE_UNSPECIFIED = 0;
+  ACTIVITY_TYPE_MEETING = 1;
+  ACTIVITY_TYPE_PROJECTS = 2;
+  ACTIVITY_TYPE_BUSINESS_INTERRUPTION = 3;
+  ACTIVITY_TYPE_TRAINING_OR_COACHING = 4;
+  ACTIVITY_TYPE_PRODUCTIVE_NOT_MEASURABLE = 5;
+  ACTIVITY_TYPE_OTHERS = 6;
+}
+
+enum ActivityTrackType {
+  ACTIVITY_TRACK_TYPE_UNSPECIFIED = 0;
+  ACTIVITY_TRACK_TYPE_TIMER = 1;
+  ACTIVITY_TRACK_TYPE_MANUAL = 2;
+  ACTIVITY_TRACK_TYPE_MANUAL_STOPPED = 3;
+}
+message DateTimeRange {
+  google.protobuf.Timestamp started_at = 1;
+  google.protobuf.Timestamp stopped_at = 2;
+}
+enum Status {
+  // is not specified or unknown
+  STATUS_UNSPECIFIED = 0;
+  // pending
+  STATUS_PENDING = 1;
+  // transferred
+  STATUS_TRANSFERRED = 2;
+  // rejected
+  STATUS_REJECTED = 3;
+  // approved
+  STATUS_APPROVED = 4;
+  // missing  
+  STATUS_MISSING = 5;
+}
+enum AbsenceType {
+  // is not specified or unknown
+  ABSENCE_TYPE_UNSPECIFIED = 0;
+  // Vacation
+  ABSENCE_TYPE_VACATION = 1;
+  // Sickness
+  ABSENCE_TYPE_SICKNESS = 2;
+}
 
 
 // 3- Definir les autres Messages necessaires et 

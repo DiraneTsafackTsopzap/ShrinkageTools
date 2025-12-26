@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.InteropServices;
 using DataAccess.CRUD.Extensions;
 using DataAccess.CRUD.Modeles;
 using DataAccess.CRUD.Repositories;
@@ -21,7 +22,7 @@ namespace DataAccess.CRUD.Services
             _shrinkageTeamsRepository = shrinkageTeamsRepository;
         }
 
-   
+
         public override async Task<GetUserByEmailResponse> GetUserByEmail(GetUserByEmailRequest request, ServerCallContext context)
         {
             if (string.IsNullOrEmpty(request.Email))
@@ -84,21 +85,21 @@ namespace DataAccess.CRUD.Services
             catch (Exception ex)
             {
 
-                throw new RpcException(new Status(StatusCode.Internal, ex.Message));
+                throw new RpcException(new Grpc.Core.Status(StatusCode.Internal, ex.Message));
             }
         }
 
         private static DateTime NormalizeUtc(DateTime dt) =>
         dt.Kind switch
-          {
-           DateTimeKind.Unspecified => DateTime.SpecifyKind(dt, DateTimeKind.Utc),
-           DateTimeKind.Local => dt.ToUniversalTime(),
-           _ => dt
-          };
+        {
+            DateTimeKind.Unspecified => DateTime.SpecifyKind(dt, DateTimeKind.Utc),
+            DateTimeKind.Local => dt.ToUniversalTime(),
+            _ => dt
+        };
 
 
         // Get Teams
-        public override async Task<GetTeamsResponse> GetTeams( GetTeamsRequest request,ServerCallContext context)
+        public override async Task<GetTeamsResponse> GetTeams(GetTeamsRequest request, ServerCallContext context)
         {
             try
             {
@@ -124,15 +125,108 @@ namespace DataAccess.CRUD.Services
             catch (Exception ex)
             {
                 throw new RpcException(
-                    new Status(StatusCode.Internal, ex.Message)
+                    new Grpc.Core.Status(StatusCode.Internal, ex.Message)
                 );
             }
         }
 
 
+        // Save Activity
+        public async Task<SaveActivityResponse> SaveActivity(SaveActivityRequest request, ServerCallContext context)
+        {
+            if (!request.UserId.TryParseToGuidNotNullOrEmpty(out var userId))
+            {
+                throw RpcExceptions.InvalidArgument($"Error with correlation Id {request.CorrelationId} userid is required");
+            }
+
+            if (request.Activity == null || !request.Activity.Id.TryParseToGuidNotNullOrEmpty(out var activityId))
+            {
+                throw RpcExceptions.InvalidArgument($"Error with correlation Id {request.CorrelationId} either activity or activity id is not specified");
+            }
+
+            if (request.Activity.ActivityType == ActivityType.Unspecified)
+            {
+                throw RpcExceptions.InvalidArgument($"Error with correlation Id {request.CorrelationId} activity type id is not specified");
+            }
+
+            if (!request.Activity.TeamId.TryParseToGuidNotNullOrEmpty(out var teamId))
+            {
+                throw RpcExceptions.InvalidArgument($"Error with correlation Id {request.CorrelationId} team id is required");
+            }
+
+            if (request.Activity.DateTimeRange?.StartedAt is null)
+            {
+                throw RpcExceptions.InvalidArgument($"Error with correlation Id {request.CorrelationId} either Activity DateTime range or activity started at is not specified");
+            }
+
+            if (request.Activity.ActivityTrackType == ActivityTrackType.Unspecified)
+            {
+                throw RpcExceptions.InvalidArgument($"Error with correlation Id {request.CorrelationId} activity track type is required");
+            }
+
+            if (request.Activity.DateTimeRange.StartedAt is not null && request.Activity.DateTimeRange.StoppedAt is not null)
+            {
+                if (request.Activity.DateTimeRange.StartedAt >= request.Activity.DateTimeRange.StoppedAt)
+                    throw RpcExceptions.InvalidArgument($"Error with correlation Id {request.CorrelationId} activity started at cannot be greater than stopped at");
+            }
+
+            var cancellationToken = context.CancellationToken;
+            var userActivity = request.Activity;
+            var shrinkageDate = request.Activity.DateTimeRange.StartedAt!.FromTimeStampToDate();
+
+            var dailyValue = await _shrinkageUsersRepository.GetActiveUserDailyValuesByUserIdAndDate(userId, shrinkageDate, cancellationToken);
+
+            if (dailyValue == null)
+            {
+                throw RpcExceptions.NotFound($"Error with correlation Id {request.CorrelationId} daily user values for user id {userId} not found");
+            }
+
+            var teamDetails = await _shrinkageTeamsRepository.GetTeamById(teamId, cancellationToken);
+            if (teamDetails is null)
+                throw RpcExceptions.NotFound($"Error with correlation Id {request.CorrelationId} Team Id {teamId} does not exist");
+
+            var activity = new ShrinkageActivityDataModel
+            {
+                Id = activityId,
+                UserId = userId,
+                TeamId = teamId,
+                StartedAt = userActivity.DateTimeRange.StartedAt!.ToDateTime().ConvertUtcToGermanDateTime(),
+                StoppedAt = userActivity.DateTimeRange?.StoppedAt?.ToDateTime().ConvertUtcToGermanDateTime(),
+                ActivityType = userActivity.ActivityType.ConvertFromApiActivityType(),
+                ActivityTrackType = userActivity.ActivityTrackType.ConvertFromApiActivityTrackType(),
+            };
+            var existingActivity = await _shrinkageUsersRepository.GetActivityById(activityId, cancellationToken);
+
+            if (existingActivity is null)
+            {
+                var createdBy = userActivity.CreatedBy;
+                var createdByUserId = await _shrinkageUsersRepository.GetUserIdByEmail(createdBy, cancellationToken);
+                if (createdByUserId == Guid.Empty)
+                    throw RpcExceptions.NotFound($"Error with correlation id {request.CorrelationId} user with email {createdBy} does not exist");
+                activity.CreatedAt = DateTime.UtcNow;
+                activity.CreatedBy = createdByUserId;
+                await _shrinkageUsersRepository.CreateActivity(activity, cancellationToken);
+            }
+            else
+            {
+                var updatedBy = userActivity.UpdatedBy;
+                var updatedByUserId = await _shrinkageUsersRepository.GetUserIdByEmail(updatedBy, cancellationToken);
+                if (updatedByUserId == Guid.Empty)
+                    throw RpcExceptions.NotFound($"Error with correlation id {request.CorrelationId} user with email {updatedBy} does not exist");
+                activity.UpdatedAt = DateTime.UtcNow;
+                activity.UpdatedBy = updatedByUserId;
+                await _shrinkageUsersRepository.UpdateActivityById(activity, cancellationToken);
+            }
+
+            return new SaveActivityResponse();
+        }
+
+
+
 
     }
 }
+   
 
 
 
