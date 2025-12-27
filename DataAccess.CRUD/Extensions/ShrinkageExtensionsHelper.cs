@@ -55,6 +55,8 @@ public static class ShrinkageExtensionsHelper
         };
     }
 
+
+    // Conversion de ActivityTypeDto vers ActivityType (gRPC)
     public static ActivityType ToGrpcActivityType(this ActivityTypeDto type)
          => type switch
          {
