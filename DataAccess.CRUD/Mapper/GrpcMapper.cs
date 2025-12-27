@@ -1,10 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using DataAccess.CRUD.Extensions;
 using DataAccess.CRUD.ModeleDto;
 using DataAccess.CRUD.Modeles;
+using Google.Protobuf.WellKnownTypes;
 using GrpcShrinkageServiceTraining.Protobuf;
 using PaidTime = DataAccess.CRUD.Modeles.PaidTime;
 
@@ -46,30 +43,30 @@ namespace DataAccess.CRUD.Mapper
             }).ToList();
         }
 
-        //    public static SaveActivityRequest MapToSaveActivityRequest(SaveActivityDto activity)
-        //    {
-        //        var apiRequest = new SaveActivityRequest
-        //        {
-        //            CorrelationId = activity.CorrelationId,
-        //            UserId = activity.Activity.UserId,
-        //            Activity = new ActivityDto
-        //            {
-        //                Id = activity.Activity.Id,
-        //                TeamId = activity.Activity.TeamId,
-        //                ActivityType = activity.Activity.ActivityType.ToGrpcActivityType(),
-        //                ActivityTrackType = activity.Activity.ActivityTrackType.ToGrpcActivityTrackType(),
-        //                DateTimeRange = new DateTimeRange
-        //                {
-        //                    StartedAt = activity.Activity.StartedAt.ToTimestamp(),
-        //                    StoppedAt = activity.Activity.StoppedAt?.ToTimestamp(),
-        //                },
-        //                CreatedBy = activity.Activity.CreatedBy,
-        //                UpdatedBy = activity.Activity.UpdatedBy ?? string.Empty,
-        //            },
-        //        };
-        //        return apiRequest;
-        //    }
-        //}
+        public static SaveActivityRequest MapToSaveActivityRequest(SaveActivityDto activity)
+        {
+            var apiRequest = new SaveActivityRequest
+            {
+                CorrelationId = activity.CorrelationId,
+                UserId = activity.Activity.UserId,
+                Activity = new Activity
+                {
+                    Id = activity.Activity.Id,
+                    TeamId = activity.Activity.TeamId,
+                    ActivityType = activity.Activity.ActivityType.ToGrpcActivityType(),
+                    ActivityTrackType = activity.Activity.ActivityTrackType.ToGrpcActivityTrackType(),
+                    DateTimeRange = new DateTimeRange
+                    {
+                        StartedAt = activity.Activity.StartedAt.ToTimestamp(),
+                        StoppedAt = activity.Activity.StoppedAt?.ToTimestamp(),
+                    },
+                    CreatedBy = activity.Activity.CreatedBy,
+                    UpdatedBy = activity.Activity.UpdatedBy ?? string.Empty,
+                },
+            };
+            return apiRequest;
+        }
+
     }
 }
 

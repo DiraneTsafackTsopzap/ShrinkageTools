@@ -2,7 +2,6 @@
 using DataAccess.CRUD.DapperContext;
 using DataAccess.CRUD.Modeles;
 using Npgsql;
-using System.Data;
 
 namespace DataAccess.CRUD.Repositories
 {
@@ -15,11 +14,17 @@ namespace DataAccess.CRUD.Repositories
             dapperDbContext = dapper;
         }
 
-        public async Task<ShrinkageUserDataModel> Create( ShrinkageUserDataModel user,CancellationToken token)
+        private async Task<NpgsqlConnection> GetOpenConnectionAsync(CancellationToken token)
+        {
+            var connection = new NpgsqlConnection(dapperDbContext.Connection.ConnectionString);
+
+            await connection.OpenAsync(token);
+            return connection;
+        }
+        public async Task<ShrinkageUserDataModel> Create(ShrinkageUserDataModel user, CancellationToken token)
 
         {
-            await using var connection = new NpgsqlConnection(dapperDbContext.Connection.ConnectionString);
-            await connection.OpenAsync(token);
+            await using var connection = await GetOpenConnectionAsync(token);
 
             await using var transaction = await connection.BeginTransactionAsync(token);
 
@@ -46,7 +51,7 @@ RETURNING
     created_at AS {nameof(ShrinkageUserDataModel.UserCreatedAt)};
 ";
 
-                var newUser = await connection.QueryFirstAsync<ShrinkageUserDataModel>( insertUserSql,user,transaction);
+                var newUser = await connection.QueryFirstAsync<ShrinkageUserDataModel>(insertUserSql, user, transaction);
 
                 // 2️⃣ Insert paid time
                 var insertPaidTimeSql = $@"
@@ -87,7 +92,7 @@ RETURNING
 
                 };
 
-                var paidTime = await connection.QueryFirstAsync<ShrinkageUserDataModel>( insertPaidTimeSql, paidTimeParams,transaction);
+                var paidTime = await connection.QueryFirstAsync<ShrinkageUserDataModel>(insertPaidTimeSql, paidTimeParams, transaction);
 
                 // 3️⃣ Merge , Retourne l'objet Shrinkage
                 newUser.PaidTimeId = paidTime.PaidTimeId;
@@ -112,35 +117,7 @@ RETURNING
             }
         }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        public async Task<ShrinkageUserDataModel?> GetUserByEmail(
-            string email,
-            CancellationToken token)
+        public async Task<ShrinkageUserDataModel?> GetUserByEmail(string email, CancellationToken token)
         {
             var sql = $@"
 SELECT DISTINCT ON (su.id)
@@ -169,15 +146,171 @@ WHERE lower(su.user_email) = @email
   AND ph.deleted_at IS NULL
 ORDER BY su.id, ph.valid_from DESC;
 ";
-
-            await using var connection =
-                new NpgsqlConnection(dapperDbContext.Connection.ConnectionString);
-
-            await connection.OpenAsync(token);
+            await using var connection = await GetOpenConnectionAsync(token);
 
             return await connection.QueryFirstOrDefaultAsync<ShrinkageUserDataModel>(
                 sql,
                 new { email = email.ToLower() });
         }
+
+        public async Task<Guid> GetUserIdByEmail(string email, CancellationToken token)
+        {
+            const string sql = @"
+SELECT su.id
+FROM shrinkage_users su
+WHERE lower(su.user_email) = @email
+  AND su.deleted_at IS NULL;
+";
+
+            await using var connection = await GetOpenConnectionAsync(token);
+
+            return await connection.QueryFirstOrDefaultAsync<Guid>(
+                sql,
+                new { email = email.ToLower() }
+            );
+        }
+
+        public async Task<ShrinkageUserDailyValuesDataModel?> GetActiveUserDailyValuesByUserIdAndDate(
+    Guid userId,
+    DateOnly shrinkageDate,
+    CancellationToken token)
+        {
+            const string sql = $@"
+SELECT 
+    udv.id                  AS {nameof(ShrinkageUserDailyValuesDataModel.Id)},
+    udv.user_id             AS {nameof(ShrinkageUserDailyValuesDataModel.UserId)},
+    udv.team_id             AS {nameof(ShrinkageUserDailyValuesDataModel.TeamId)},
+    udv.paid_time           AS {nameof(ShrinkageUserDailyValuesDataModel.PaidTime)},
+    udv.paid_time_off       AS {nameof(ShrinkageUserDailyValuesDataModel.PaidTimeOff)},
+    udv.overtime            AS {nameof(ShrinkageUserDailyValuesDataModel.Overtime)},
+    udv.vacation_time       AS {nameof(ShrinkageUserDailyValuesDataModel.VacationTime)},
+    udv.status              AS {nameof(ShrinkageUserDailyValuesDataModel.Status)},
+    udv.comment             AS {nameof(ShrinkageUserDailyValuesDataModel.Comment)},
+    udv.created_at          AS {nameof(ShrinkageUserDailyValuesDataModel.CreatedAt)},
+    udv.created_by          AS {nameof(ShrinkageUserDailyValuesDataModel.CreatedBy)},
+    u1.user_email           AS {nameof(ShrinkageUserDailyValuesDataModel.CreatedByUserEmail)},
+    udv.updated_at          AS {nameof(ShrinkageUserDailyValuesDataModel.UpdatedAt)},
+    udv.updated_by          AS {nameof(ShrinkageUserDailyValuesDataModel.UpdatedBy)},
+    u2.user_email           AS {nameof(ShrinkageUserDailyValuesDataModel.UpdatedByUserEmail)},
+    udv.shrinkage_date      AS {nameof(ShrinkageUserDailyValuesDataModel.ShrinkageDate)}
+FROM shrinkage_user_daily_values udv
+LEFT JOIN shrinkage_users u1 ON u1.id = udv.created_by
+LEFT JOIN shrinkage_users u2 ON u2.id = udv.updated_by
+WHERE udv.user_id = @userId
+  AND DATE(udv.shrinkage_date) = @shrinkageDate
+  AND udv.deleted_at IS NULL;
+";
+
+            var parameters = new
+            {
+                userId,
+                shrinkageDate
+            };
+
+            await using var connection = await GetOpenConnectionAsync(token);
+
+            return await connection.QueryFirstOrDefaultAsync<ShrinkageUserDailyValuesDataModel>(sql, parameters);
+        }
+
+
+        public async Task<ShrinkageActivityDataModel?> GetActivityById(Guid id, CancellationToken token)
+        {
+            const string sql = $@"
+SELECT 
+    id                   AS {nameof(ShrinkageActivityDataModel.Id)},
+    created_at           AS {nameof(ShrinkageActivityDataModel.CreatedAt)},
+    created_by           AS {nameof(ShrinkageActivityDataModel.CreatedBy)},
+    updated_at           AS {nameof(ShrinkageActivityDataModel.UpdatedAt)},
+    updated_by           AS {nameof(ShrinkageActivityDataModel.UpdatedBy)},
+    user_id              AS {nameof(ShrinkageActivityDataModel.UserId)},
+    team_id              AS {nameof(ShrinkageActivityDataModel.TeamId)},
+    started_at           AS {nameof(ShrinkageActivityDataModel.StartedAt)},
+    stopped_at           AS {nameof(ShrinkageActivityDataModel.StoppedAt)},
+    activity_type        AS {nameof(ShrinkageActivityDataModel.ActivityType)},
+    activity_track_type  AS {nameof(ShrinkageActivityDataModel.ActivityTrackType)}
+FROM shrinkage_user_activities
+WHERE id = @id
+  AND deleted_at IS NULL;
+";
+
+            var parameters = new { id };
+
+            await using var connection = await GetOpenConnectionAsync(token);
+
+            return await connection.QuerySingleOrDefaultAsync<ShrinkageActivityDataModel>(sql, parameters);
+        }
+
+        public async Task<ShrinkageActivityDataModel> CreateActivity(ShrinkageActivityDataModel activity, CancellationToken token)
+        {
+            const string sql = $@"
+INSERT INTO shrinkage_user_activities (
+    id,
+    created_at,
+    created_by,
+    user_id,
+    team_id,
+    started_at,
+    stopped_at,
+    activity_type,
+    activity_track_type
+)
+VALUES (
+    @{nameof(ShrinkageActivityDataModel.Id)},
+    @{nameof(ShrinkageActivityDataModel.CreatedAt)},
+    @{nameof(ShrinkageActivityDataModel.CreatedBy)},
+    @{nameof(ShrinkageActivityDataModel.UserId)},
+    @{nameof(ShrinkageActivityDataModel.TeamId)},
+    @{nameof(ShrinkageActivityDataModel.StartedAt)},
+    @{nameof(ShrinkageActivityDataModel.StoppedAt)},
+    @{nameof(ShrinkageActivityDataModel.ActivityType)},
+    @{nameof(ShrinkageActivityDataModel.ActivityTrackType)}
+)
+RETURNING
+    id                      AS {nameof(ShrinkageActivityDataModel.Id)},
+    created_at              AS {nameof(ShrinkageActivityDataModel.CreatedAt)},
+    created_by              AS {nameof(ShrinkageActivityDataModel.CreatedBy)},
+    user_id                 AS {nameof(ShrinkageActivityDataModel.UserId)},
+    team_id                 AS {nameof(ShrinkageActivityDataModel.TeamId)},
+    started_at              AS {nameof(ShrinkageActivityDataModel.StartedAt)},
+    stopped_at              AS {nameof(ShrinkageActivityDataModel.StoppedAt)},
+    activity_type           AS {nameof(ShrinkageActivityDataModel.ActivityType)},
+    activity_track_type     AS {nameof(ShrinkageActivityDataModel.ActivityTrackType)};
+";
+
+            try
+            {
+                await using var connection = new NpgsqlConnection(dapperDbContext.Connection.ConnectionString);
+                await connection.OpenAsync(token);
+                return await connection.QueryFirstAsync<ShrinkageActivityDataModel>(sql, activity);
+            }
+            catch (Exception ex)
+            {
+
+                Console.WriteLine($"❌ Erreur dans CreateActivity: {ex.Message}");
+                throw;
+            }
+
+        }
+
+        public async Task<int> UpdateActivityById(ShrinkageActivityDataModel activity, CancellationToken token)
+        {
+            const string sql = $@"
+UPDATE shrinkage_user_activities
+SET
+    updated_at          = @{nameof(ShrinkageActivityDataModel.UpdatedAt)},
+    updated_by          = @{nameof(ShrinkageActivityDataModel.UpdatedBy)},
+    team_id             = @{nameof(ShrinkageActivityDataModel.TeamId)},
+    started_at          = @{nameof(ShrinkageActivityDataModel.StartedAt)},
+    stopped_at          = @{nameof(ShrinkageActivityDataModel.StoppedAt)},
+    activity_type       = @{nameof(ShrinkageActivityDataModel.ActivityType)},
+    activity_track_type = @{nameof(ShrinkageActivityDataModel.ActivityTrackType)}
+WHERE id = @{nameof(ShrinkageActivityDataModel.Id)};
+";
+
+            await using var connection = await GetOpenConnectionAsync(token);
+
+            return await connection.ExecuteAsync(sql, activity);
+        }
+
     }
 }
