@@ -16,7 +16,7 @@ namespace DataAccess.CRUD.Mapper
         {
             return new UserDto
             {
-                UserId = user.UserId.ToGuid(),  
+                UserId = user.UserId.ToGuid(),
                 TeamId = user.TeamId == null || user.TeamId.ToGuid() == Guid.Empty ? null : user.TeamId.ToGuid(),
                 Email = user.Email,
                 PaidTimeList = user.PaidTime.Select(x => new PaidTime
@@ -45,6 +45,31 @@ namespace DataAccess.CRUD.Mapper
                 TeamLeadIds = team.TeamLeadIds.Select(id => id.ToGuid()).ToList(),
             }).ToList();
         }
+
+        //    public static SaveActivityRequest MapToSaveActivityRequest(SaveActivityDto activity)
+        //    {
+        //        var apiRequest = new SaveActivityRequest
+        //        {
+        //            CorrelationId = activity.CorrelationId,
+        //            UserId = activity.Activity.UserId,
+        //            Activity = new ActivityDto
+        //            {
+        //                Id = activity.Activity.Id,
+        //                TeamId = activity.Activity.TeamId,
+        //                ActivityType = activity.Activity.ActivityType.ToGrpcActivityType(),
+        //                ActivityTrackType = activity.Activity.ActivityTrackType.ToGrpcActivityTrackType(),
+        //                DateTimeRange = new DateTimeRange
+        //                {
+        //                    StartedAt = activity.Activity.StartedAt.ToTimestamp(),
+        //                    StoppedAt = activity.Activity.StoppedAt?.ToTimestamp(),
+        //                },
+        //                CreatedBy = activity.Activity.CreatedBy,
+        //                UpdatedBy = activity.Activity.UpdatedBy ?? string.Empty,
+        //            },
+        //        };
+        //        return apiRequest;
+        //    }
+        //}
     }
 }
 
