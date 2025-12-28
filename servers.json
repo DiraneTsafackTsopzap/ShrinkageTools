@@ -1,0 +1,14 @@
+{
+  "Servers": {
+    "1": {
+      "Name": "MeinDatabaseServer",
+      "Group": "Servers",
+      "Host": "postgres-service",
+      "Port": 5432,
+      "MaintenanceDB": "shrinkage_database",
+      "Username": "postgres",
+      "SSLMode": "prefer"
+    }
+  }
+}
+
