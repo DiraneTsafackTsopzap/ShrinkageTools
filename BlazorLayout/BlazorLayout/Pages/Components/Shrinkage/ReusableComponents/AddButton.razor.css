@@ -1,0 +1,12 @@
+﻿.btn:hover {
+    background-color: lightgrey !important;
+}
+
+.icon-size {
+    width: 26px;
+    height: 25px;
+}
+
+.btn:disabled {
+    pointer-events: none;
+}

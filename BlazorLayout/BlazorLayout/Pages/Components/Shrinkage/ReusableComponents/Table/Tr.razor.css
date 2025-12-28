@@ -1,0 +1,21 @@
+﻿
+tr {
+    position: relative;
+    cursor: pointer;
+    --outline-width: 1.6px;
+}
+
+    tr:focus {
+        --outline-color: var(--lowell-orange-half);
+        outline: var(--outline-width) solid var(--outline-color);
+    }
+
+    tr[is-selected] {
+        --outline-color: var(--lowell-orange);
+        outline: var(--outline-width) solid var(--outline-color);
+    }
+
+.grid-table tr:focus,
+.grid-table tr[is-selected] {
+    outline-offset: calc(-1 * var(--outline-width));
+}

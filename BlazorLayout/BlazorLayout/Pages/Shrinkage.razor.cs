@@ -69,10 +69,10 @@ namespace BlazorLayout.Pages
                 userEmailAddress = authState.User.GetId();
 
                 // Ensure GetUserByEmail
-                await ShrinkageApi.EnsureGetUserByEmail(userEmailAddress, forceRefresh: false, TimeoutToken(Timeout));
+              await ShrinkageApi.EnsureGetUserByEmail(userEmailAddress, forceRefresh: false, TimeoutToken(Timeout));
 
                 // Ensure GetTeams
-                await ShrinkageApi.EnsureGetTeams(userEmailAddress, forceRefresh: false, TimeoutToken(Timeout));
+               await ShrinkageApi.EnsureGetTeams(userEmailAddress, forceRefresh: false, TimeoutToken(Timeout));
 
                 // Attention : Toujours Charger les Stores Avant d'appeler le isUserLoaded
 

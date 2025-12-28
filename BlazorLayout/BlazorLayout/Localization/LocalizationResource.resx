@@ -147,16 +147,136 @@
   <data name="shrinkage_absences" xml:space="preserve">
     <value>Absences</value>
   </data>
+  <data name="shrinkage_activity_track_type_manual" xml:space="preserve">
+    <value>Manual</value>
+  </data>
+  <data name="shrinkage_activity_track_type_manual_stopped" xml:space="preserve">
+    <value>Stopped manually</value>
+  </data>
+  <data name="shrinkage_activity_track_type_timer" xml:space="preserve">
+    <value>Timer</value>
+  </data>
+  <data name="shrinkage_activity_type_business_interruption" xml:space="preserve">
+    <value>Business interruption</value>
+  </data>
+  <data name="shrinkage_activity_type_meeting" xml:space="preserve">
+    <value>Meeting</value>
+  </data>
+  <data name="shrinkage_activity_type_others" xml:space="preserve">
+    <value>Others</value>
+  </data>
+  <data name="shrinkage_activity_type_productive_not_measurable" xml:space="preserve">
+    <value>Productive not measurable</value>
+  </data>
+  <data name="shrinkage_activity_type_projects" xml:space="preserve">
+    <value>Projects</value>
+  </data>
+  <data name="shrinkage_activity_type_training_or_coaching" xml:space="preserve">
+    <value>Training / Coaching</value>
+  </data>
+  <data name="shrinkage_activity_unknown_status" xml:space="preserve">
+    <value>Unknown</value>
+  </data>
+  <data name="shrinkage_button_approved" xml:space="preserve">
+    <value>Approved</value>
+  </data>
+  <data name="shrinkage_button_refresh" xml:space="preserve">
+    <value>Refresh</value>
+  </data>
+  <data name="shrinkage_button_rejected" xml:space="preserve">
+    <value>Rejected</value>
+  </data>
+  <data name="shrinkage_button_transferred" xml:space="preserve">
+    <value>Transferred</value>
+  </data>
+  <data name="shrinkage_error_activity_running" xml:space="preserve">
+    <value>Please end the current activity</value>
+  </data>
   <data name="shrinkage_error_get_user_email" xml:space="preserve">
     <value>Failed to get User</value>
+  </data>
+  <data name="shrinkage_error_message_from_should_be_smaller_to" xml:space="preserve">
+    <value>The start time must be before the end time.</value>
+  </data>
+  <data name="shrinkage_label_activity" xml:space="preserve">
+    <value>Activity</value>
+  </data>
+  <data name="shrinkage_label_duration" xml:space="preserve">
+    <value>Duration</value>
+  </data>
+  <data name="shrinkage_label_from" xml:space="preserve">
+    <value>From</value>
+  </data>
+  <data name="shrinkage_label_status" xml:space="preserve">
+    <value>Status</value>
+  </data>
+  <data name="shrinkage_label_team" xml:space="preserve">
+    <value>Team</value>
+  </data>
+  <data name="shrinkage_label_to" xml:space="preserve">
+    <value>To</value>
   </data>
   <data name="shrinkage_loader_message" xml:space="preserve">
     <value>Loading</value>
   </data>
+  <data name="shrinkage_message_select_activity" xml:space="preserve">
+    <value>Select Activity</value>
+  </data>
+  <data name="shrinkage_message_select_team" xml:space="preserve">
+    <value>Select Team</value>
+  </data>
+  <data name="shrinkage_status_all" xml:space="preserve">
+    <value>All</value>
+  </data>
+  <data name="shrinkage_status_booked" xml:space="preserve">
+    <value>Booked</value>
+  </data>
+  <data name="shrinkage_status_open" xml:space="preserve">
+    <value>Open</value>
+  </data>
+  <data name="shrinkage_status_running" xml:space="preserve">
+    <value>Running</value>
+  </data>
+  <data name="shrinkage_summary_of_the_date_SD" xml:space="preserve">
+    <value>Summary for {0} den {1:dd.MM.yyyy}</value>
+  </data>
+  <data name="shrinkage_tooltip_add" xml:space="preserve">
+    <value>add</value>
+  </data>
+  <data name="shrinkage_tooltip_cancel" xml:space="preserve">
+    <value>cancel</value>
+  </data>
+  <data name="shrinkage_tooltip_save" xml:space="preserve">
+    <value>save</value>
+  </data>
   <data name="shrinkage_user_activities" xml:space="preserve">
     <value>User Activities</value>
   </data>
+  <data name="shrinkage_warning_activity_overlap_S" xml:space="preserve">
+    <value>The selected time overlaps with the activity: {0}</value>
+  </data>
+  <data name="shrinkage_warning_activity_required_field" xml:space="preserve">
+    <value>Booking an activity without specifying the activity type is not allowed.</value>
+  </data>
+  <data name="shrinkage_warning_future_date" xml:space="preserve">
+    <value>No bookings may be made for the future.</value>
+  </data>
+  <data name="shrinkage_warning_select_end_time" xml:space="preserve">
+    <value>Please select an End time</value>
+  </data>
+  <data name="shrinkage_warning_select_team" xml:space="preserve">
+    <value>Please select a Team</value>
+  </data>
+  <data name="shrinkage_warning_time_consumed_S" xml:space="preserve">
+    <value>You do not have enough time to participate in this activity.</value>
+  </data>
+  <data name="shrinkage_warning_zero_remaining_time" xml:space="preserve">
+    <value>You cannot add any more activities because the remaining time is 0.</value>
+  </data>
   <data name="shrinkage_welcome_message" xml:space="preserve">
     <value>Welcome</value>
+  </data>
+  <data name="table_is_empty" xml:space="preserve">
+    <value>No Entries</value>
   </data>
 </root>

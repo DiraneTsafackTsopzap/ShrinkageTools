@@ -1,0 +1,24 @@
+﻿
+th[x-sort] {
+    position: relative;
+    padding-right: 3ex;
+    cursor: pointer;
+    user-select: none;
+}
+
+    th[x-sort]::after {
+        content: attr(x-sort);
+        position: absolute;
+        right: 1ex;
+        top: 50%;
+        transform: translate(calc(.4ex - 50%), -50%);
+    }
+
+table:has(> thead > tr > th[x-sort]) th {
+    border-right: 1px solid #dee2e6;
+    &:first-of-type
+
+{
+    border-left: 1px solid #dee2e6;
+}
+}

@@ -1,0 +1,251 @@
+﻿@typeparam TItem
+@attribute [CascadingTypeParameter(nameof(TItem))]
+
+@using System.Diagnostics.CodeAnalysis
+@using BlazorLayout.Extensions
+@using BlazorLayout.Shared
+@using Microsoft.Extensions.Localization
+
+<table class="table mt-3 @CssClass @(Grid ? "grid-table" : "")"
+       style="--max-visible-rows: @(MaxVisibleRows!.Value); @style">
+    <CascadingValue Value="this" IsFixed>
+        <tbody>
+        @if (items.Any())
+        {
+            @if (RowTemplate is not null)
+            {
+                foreach (var item in items)
+                {
+                    @RowTemplate(item)
+                }
+            }
+            else
+            {
+                foreach (var item in Items)
+                {
+                    <Tr @key="item" Item="item" IsSelected="ReferenceEquals(item, SelectedItem)"
+                        OnSelection="HandleSelection" OnActivation2="HandleActivation">
+                        @AutoRowTemplate!(item)
+                    </Tr>
+                }
+            }
+        }
+        else
+        {
+            <tr>
+                <td colspan="999" x-text="@Localizer["table_is_empty"]"></td>
+            </tr>
+        }
+        </tbody>
+        @* rendered last to avoid explicit z-index *@
+        <thead style="order: -1">
+        <tr>@TableHeader</tr>
+        </thead>
+    </CascadingValue>
+</table>
+
+@code {
+
+    [Inject]
+    private IStringLocalizer Localizer { get; init; } = null!;
+    /// <summary>Forces the table to render as a grid.</summary>
+    /// <remarks>Grid rendering enables dynamic sizing and scrolling support.</remarks>
+    /// <seealso cref="MaxVisibleRows"/>
+    [Parameter]
+    public bool Grid { get; set; }
+
+    /// <summary>Limits the table's height.</summary>
+    /// <remarks>Implicitly enables <see cref="Grid"/>.</remarks>
+    [Parameter]
+    public uint? MaxVisibleRows { get; set; }
+
+    [Parameter]
+    public string? CssClass { get; init; }
+
+    [Parameter]
+    [SuppressMessage("ReSharper", "InconsistentNaming")]
+    public string? style { get; init; }
+
+    /// <summary>Should use <see cref="Th{TItem}"/> to define header columns.</summary>
+    [Parameter]
+    public RenderFragment? TableHeader { get; init; }
+
+    /// <summary>The user has to render the <c>&lt;tr/&gt;</c>. This is to allow specialisation (adding class names etc).</summary>
+    /// <remarks>Mutually exclusive with <see cref="AutoRowTemplate"/>.</remarks>
+    [Parameter]
+    public RenderFragment<TItem>? RowTemplate { get; init; }
+
+    /// <summary>Gets rendered inside a <see cref="Tr{TItem}"/>. When using this, the table keeps track of item selection.</summary>
+    /// <remarks>Mutually exclusive with <see cref="RowTemplate"/>.</remarks>
+    [Parameter]
+    public RenderFragment<TItem>? AutoRowTemplate { get; init; }
+
+    /// <summary>If provided, the table becomes sortable via clicking its column headers.</summary>
+    [Parameter]
+    public ItemComparer? Comparer { get; init; }
+
+    [Parameter, EditorRequired]
+    public IReadOnlyList<TItem> Items
+    {
+        get => items;
+        init
+        {
+            originalItems = value;
+            ApplySortOrders();
+        }
+    }
+
+    /// <summary>Fires when a row is clicked or space or enter is pressed while it has focus.</summary>
+    /// <remarks>Use with <see cref="AutoRowTemplate"/>. Required when <see cref="OnActivation2"/> is <c>null</c>.</remarks>
+    [Parameter]
+    public Action<TItem>? OnSelection { get; set; }
+
+    /// <summary>Fires when a row is double-clicked or enter is pressed while it has focus.</summary>
+    /// <remarks>Use with <see cref="AutoRowTemplate"/>. optional</remarks>
+    [Parameter]
+    public Action? OnActivation { get; set; }
+
+    /// <summary>Like <see cref="OnActivation"/> but gets called with the item, allowing the parent to not track the selected entry itself.</summary>
+    /// <remarks>Use with <see cref="AutoRowTemplate"/>. Required when <see cref="OnSelection"/> is <c>null</c>.</remarks>
+    [Parameter]
+    public Action<TItem>? OnActivation2 { get; set; }
+
+    /// <summary>
+    /// Managed by the table but can be optionally supplied. Doing so allows pre-selecting an
+    /// item that was only just added, possibly replacing a previously selected one.
+    /// </summary>
+    /// <remarks>There's no other use-case.</remarks>
+    [Parameter]
+    public TItem? SelectedItem { get; set; }
+
+    [Parameter]
+    public bool NotSortable { get; set; }
+    
+    private List<TItem> items = null!;
+    private IReadOnlyList<TItem> originalItems = null!;
+
+#if DEBUG
+    static Table()
+    {
+        // The blazor compiler fails to forward type constraints
+        if (!typeof(TItem).IsClass) throw new InvalidOperationException("The item type must be a reference type");
+    }
+#endif
+
+    public override async Task SetParametersAsync(ParameterView parameters)
+    {
+        var oldItems = originalItems;
+        var oldSelectedItem = SelectedItem;
+        await base.SetParametersAsync(parameters);
+        if (!ReferenceEquals(originalItems, oldItems) && ReferenceEquals(oldSelectedItem, SelectedItem) && SelectedItem is not null && !originalItems.Contains(SelectedItem))
+            SelectedItem = default; // GC
+
+        var maxRows = parameters.GetValueOrDefault<uint?>(nameof(MaxVisibleRows));
+        Grid = Grid || maxRows is not null;
+        MaxVisibleRows = maxRows is not null
+            ? Math.Max(maxRows.Value, 1)
+            : MaxVisibleRows ?? uint.MaxValue;
+    }
+
+#if DEBUG
+    protected override void OnParametersSet()
+    {
+        if (RowTemplate is null == AutoRowTemplate is null)
+            throw new ArgumentException($"{nameof(RowTemplate)} and {nameof(AutoRowTemplate)} are mutually exclusive and using either is required.");
+        if (AutoRowTemplate is null && (OnSelection, OnActivation, OnActivation2) is not (null, null, null))
+            throw new ArgumentException($"{nameof(OnSelection)}, {nameof(OnActivation)} and {nameof(OnActivation2)} are only allowed when using {nameof(AutoRowTemplate)}.");
+        if (AutoRowTemplate is not null && (OnSelection, OnActivation2) is (null, null))
+            throw new ArgumentException($"One of {nameof(OnSelection)} and {nameof(OnActivation2)} is required when using {nameof(AutoRowTemplate)}.");
+
+        base.OnParametersSet();
+    }
+#endif
+
+    private void HandleSelection(TItem item)
+    {
+        if (ReferenceEquals(item, SelectedItem))
+            return;
+        SelectedItem = item;
+        OnSelection?.Invoke(item);
+        StateHasChanged();
+    }
+
+    private void HandleActivation(TItem item)
+    {
+        OnActivation?.Invoke();
+        OnActivation2?.Invoke(item);
+    }
+
+    /// <summary>Owned by <see cref="Th{TItem}"/>. Don't access it anywhere else.</summary>
+    /// <remarks>Note that this is the least disgusting hack enabling columns to know their index.
+    /// The alternatives are even worse. Blazor is not designed for this kind of stuff.</remarks>
+    public uint ColumnIndex { get; set; }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        ColumnIndex = 0;
+        base.OnAfterRender(firstRender);
+    }
+
+    public List<(uint columnIndex, SortOrder direction)> SortOrders { get; private set; } = [];
+
+    /// <remarks>Called by <see cref="Th{TItem}"/>.</remarks>
+    public void Sort(uint columnIndex)
+    {
+        if (Comparer is null || NotSortable || items.Count == 0)
+            return;
+
+        var sortIndexOfColumn = SortOrders.FindIndex(s => s.columnIndex == columnIndex);
+        switch (sortIndexOfColumn)
+        {
+            case 0:
+                if (SortOrders[sortIndexOfColumn].direction == SortOrder.Descending)
+                {
+                    SortOrders = [];
+                    break;
+                }
+
+                SortOrders[sortIndexOfColumn] = (columnIndex, SortOrder.Descending);
+                break;
+            case > 0:
+                SortOrders.RemoveAt(sortIndexOfColumn);
+                break;
+            default:
+                SortOrders.Insert(0, (columnIndex, SortOrder.Ascending));
+                break;
+        }
+
+        ApplySortOrders();
+    }
+
+    private void ApplySortOrders()
+    {
+        items = [..originalItems];
+        if (Comparer is null)
+            return;
+        
+        items.Sort((a, b) =>
+        {
+            foreach (var kv in SortOrders)
+            {
+                var s = Comparer(a, b, kv.columnIndex);
+                if (s == 0) continue;
+                return kv.direction == SortOrder.Ascending
+                    ? s
+                    : -s;
+            }
+
+            return originalItems.IndexOf(a).CompareTo(originalItems.IndexOf(b));
+        });
+
+        StateHasChanged();
+    }
+
+    /// <summary>Called a bunch of times with 2 items at a time to sort the table rows.</summary>
+    /// <param name="columnIndex">The index of the column to sort by.</param>
+    /// <returns><c>&lt;0</c> if <paramref name="a"/> should come before <paramref name="b"/>, <c>0</c> if
+    /// they are considered equal, <c>&gt;0</c> if <paramref name="b"/> should come before <paramref name="a"/>.</returns>
+    public delegate int ItemComparer(TItem a, TItem b, uint columnIndex);
+
+}
+

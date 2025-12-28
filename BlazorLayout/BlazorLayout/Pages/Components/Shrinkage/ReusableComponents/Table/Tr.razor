@@ -1,0 +1,76 @@
+﻿@using BlazorLayout.ExtensionsJavaScript
+
+@typeparam TItem
+
+<tr @ref="trRef" tabindex="0" is-selected="@IsSelected" class="@CssClass" @onclick="HandleInput" @ondblclick="@HandleInput" @onkeydown="HandleInput">
+    @ChildContent
+</tr>
+
+@code {
+    // A selectible table row.
+    // Should be used only inside <Table><RowTemplate>...</RowTemplate></Table>!
+
+    [Parameter]
+    public string? CssClass { get; init; }
+
+    /// <summary>Gets passed to <see cref="OnSelection"/>.</summary>
+    [Parameter, EditorRequired]
+    public TItem Item { get; init; } = default!;
+
+    [Parameter, EditorRequired]
+    public bool IsSelected { get; init; }
+
+    /// <summary>Fires when the row is clicked or space or enter is pressed while it has focus.</summary>
+    /// <remarks>Should update <see cref="IsSelected"/>.</remarks>
+    [Parameter, EditorRequired]
+    public Action<TItem> OnSelection { get; init; } = null!;
+
+    /// <summary>Fires when the row is double-clicked or enter is pressed while it has focus.</summary>
+    [Parameter]
+    public Action? OnActivation { get; init; }
+
+    /// <summary>Like <see cref="OnActivation"/> but gets called with the item.</summary>
+    [Parameter]
+    public Action<TItem>? OnActivation2 { get; init; }
+
+    [Parameter, EditorRequired]
+    public RenderFragment ChildContent { get; init; } = null!;
+
+    [Inject]
+    private IJSRuntime JsRuntime { get; init; } = null!;
+
+    private ElementReference trRef;
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender && (OnActivation, OnActivation2) is not (null, null))
+            JsRuntime.PreventDoubleClickTextSelection(trRef);
+
+        base.OnAfterRender(firstRender);
+    }
+
+#if DEBUG
+    protected override void OnParametersSet()
+    {
+        ArgumentNullException.ThrowIfNull(OnSelection);
+        if ((OnActivation, OnActivation2) is (not null, not null))
+            throw new ArgumentException($"{nameof(OnActivation)} and {nameof(OnActivation2)} are mutually exclusive.");
+        base.OnParametersSet();
+    }
+#endif
+
+    private void HandleInput(EventArgs ev)
+    {
+        if (ev is MouseEventArgs { Type: "click" } or KeyboardEventArgs { Code: "Space" })
+        {
+            OnSelection(Item);
+        }
+        else if (ev is MouseEventArgs { Type: "dblclick" } or KeyboardEventArgs { Code: "Enter" })
+        {
+            OnSelection(Item);
+            OnActivation?.Invoke();
+            OnActivation2?.Invoke(Item);
+        }
+    }
+
+}

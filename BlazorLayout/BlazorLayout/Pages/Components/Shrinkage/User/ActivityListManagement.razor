@@ -1,0 +1,323 @@
+﻿@using BlazorLayout.Enums
+@using BlazorLayout.Gateways
+@using BlazorLayout.Modeles
+@using BlazorLayout.Pages.Components.Shrinkage.ReusableComponents
+@using BlazorLayout.Pages.Components.Shrinkage.ReusableComponents.Table
+@using BlazorLayout.Shared
+@using BlazorLayout.StateManagement
+@using BlazorLayout.Stores
+@using BlazorLayout.Utilities
+@using Microsoft.Extensions.Localization
+@inherits StatefulComponent<ActivityListManagement.StateT>
+
+<div class="d-flex justify-content-end mb-2">
+    <AddButton OnClick="@ShowAddRow" Disabled="@(isAddingRow || isEditing)" />
+</div>
+<EditForm EditContext="formContext" OnValidSubmit="HandleSubmit">
+    <Table Grid Items="@GetUserActivities()" CssClass="table-striped mb-0" MaxVisibleRows="7">
+        <TableHeader>
+            <Th CssClass="align-text-bottom text-left">@Localizer["shrinkage_label_activity"]</Th>
+            <Th CssClass="align-text-bottom text-center">@Localizer["shrinkage_label_from"]</Th>
+            <Th CssClass="align-text-bottom text-center">@Localizer["shrinkage_label_to"]</Th>
+            <Th CssClass="align-text-bottom text-center">@Localizer["shrinkage_label_duration"]</Th>
+            <Th CssClass="align-text-bottom text-left">@Localizer["shrinkage_label_team"]</Th>
+            <Th CssClass="align-text-bottom text-left">@Localizer["shrinkage_label_status"]</Th>
+            <Th></Th>
+        </TableHeader>
+        <RowTemplate Context="row">
+            <Tr @key="@row.Id" TItem="ActivityDto" Item="row"
+                IsSelected="@(selectedActivity?.Id == row.Id)"
+                OnSelection="OnClick">
+                @if (formActivityDto?.Id == row.Id)
+                {
+                     <ActivityEditor @ref="activityFormRef"
+
+                                    ActivityDto="formActivityDto"
+                                    EditContext="formContext"
+                                    OnCancel="@OnCancel"
+                                    ShrinkageDate="ShrinkageDate"
+                                    UserPaidTime="UserPaidTime"
+                                    OnWarning="SetWarning"
+                                    OnValidSubmit="SaveForm"
+                                    UserOvertime="UserOvertime"
+                                    UserVacationTime="UserVacationTime"
+                                    UserPaidTimeOff="UserPaidTimeOff"
+                                    DefaultTeamId="DefaultTeamId"
+                                    UserActivities="UserActivities"
+                                    OnActivityChanged="UpdateActivity"
+                                    IsAdmin="false"/> 
+                }
+                else
+                {
+                    <td class="align-text-bottom text-left">@row.ActivityType.ConvertToActivityTypeString()</td>
+                    <td class="align-text-bottom text-center">@row.StartedAt.ToString("HH:mm")</td>
+                    <td class="align-text-bottom text-center">@row.StoppedAt?.ToString("HH:mm")</td>
+                    <td class="align-text-bottom text-center">@TimeCalculator.GetDuration(row.StartedAt, row.StoppedAt)</td>
+                    <td class="align-text-bottom text-left">@GetTeamName(row.TeamId)</td>
+                    <td class="align-text-bottom text-left">
+                        @if (row.StoppedAt.HasValue)
+                        {
+                            <span class="badge booked-status">@Localizer["shrinkage_status_booked"]</span>
+                        }
+                        else if (!row.StoppedAt.HasValue)
+                        {
+                            <span class="badge running-status">@Localizer["shrinkage_status_running"]</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary">@Localizer["shrinkage_activity_unknown_status"]</span>
+                        }
+
+                    </td>
+                    <td>
+                        <div class="d-flex gap-2 justify-content-center">
+                            @* <button @onclick="() =>EditActivity(row)"
+                                    disabled="@(IsReadOnly || isAddingRow || IsTimerActive || isEditing || IsUiLocked)"
+                                    type="button"
+                                    class="btn btn-sm mr-2"
+                                    title="@Localizer["shrinkage_tooltip_edit"]">
+                                <img src="img/edit-icon.svg" class="icon-size" alt="Edit"/>
+                            </button> *@
+
+                            @* <button @onclick="() =>ConfirmDeleteActivity(row)"
+                                    disabled="@(IsReadOnly || isAddingRow || IsTimerActive || isEditing || IsUiLocked)"
+                                    type="button"
+                                    class="btn btn-sm"
+                                    title="@Localizer["shrinkage_tooltip_delete"]">
+                                <img src="img/bin-icon.svg" class="icon-size" alt="Delete"/>
+                            </button> *@
+                        </div>
+                    </td>
+                }
+            </Tr>
+        </RowTemplate>
+    </Table>
+
+</EditForm>
+
+
+
+@code {
+
+    [Inject]
+    private UserByEmailStore UserByEmailStore { get; init; } = null!;
+
+    [Inject]
+    private IStringLocalizer Localizer { get; init; } = null!;
+
+
+    [Inject]
+    private ShrinkageApi ShrinkageApi { get; init; } = null!;
+
+    [Parameter, EditorRequired]
+    public Guid DefaultTeamId { get; set; }
+
+    [Inject]
+    private TeamsStore TeamsStore { get; init; } = null!;
+
+    [Parameter, EditorRequired]
+    public IReadOnlyList<ActivityDto> UserActivities { get; set; } = [];
+
+    [Parameter, EditorRequired]
+    public Action<string?> OnWarning { get; set; }
+
+    private ActivityDto? selectedActivity;
+    private EditContext? formContext;
+    private ActivityDto? formActivityDto = new();
+
+    [Parameter, EditorRequired]
+    public DateOnly ShrinkageDate { get; set; }
+
+    private ActivityEditor? activityFormRef;
+
+    [Parameter, EditorRequired]
+    public TimeSpan UserPaidTime { get; set; }
+
+    [Parameter, EditorRequired]
+    public TimeSpan UserOvertime { get; set; }
+
+    [Parameter, EditorRequired]
+    public TimeSpan UserVacationTime { get; set; }
+
+    [Parameter, EditorRequired]
+    public TimeSpan UserPaidTimeOff { get; set; }
+
+
+    public sealed record StateT
+    {
+        public UserDto? CurrentUser { get; init; }
+        public IReadOnlyList<TeamDto> Teams { get; init; } = [];
+        // public IReadOnlyList<ActivityType> ActivityTypes { get; init; } = [];
+    }
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        formActivityDto = new ActivityDto();
+        formContext = new EditContext(formActivityDto);
+    }
+
+    private IReadOnlyList<ActivityDto> GetUserActivities()
+    {
+        var activities = UserActivities.OrderByDescending(r => r.StartedAt);
+        if (isAddingRow && formActivityDto is not null)
+        {
+            return new[] { formActivityDto }.Concat(activities).ToList();
+        }
+
+        return activities.ToList();
+    }
+    protected override StateT BuildState()
+    {
+        return new StateT
+        {
+            CurrentUser = UserByEmailStore.User,
+            Teams = TeamsStore.Teams ?? [],
+        };
+    }
+    private string GetTeamName(Guid? teamId)
+    {
+        if (teamId == null) return string.Empty;
+        return State.Teams.FirstOrDefault(t => t.Id == teamId)?.Name ?? throw new InvalidOperationException($"Team with ID {teamId} not found.");
+    }
+    private bool isAddingRow;
+    private bool isEditing;
+
+    private void ShowAddRow()
+    {
+        OnWarning(null);
+        selectedActivity = null;
+
+        if (UserActivities.Any(x => x.StoppedAt == null))
+        {
+            SetWarning(Localizer["shrinkage_error_activity_running"]);
+            return;
+        }
+
+        // var remainingTime = TimeCalculator.GetRemainingTime(UserPaidTime, UserOvertime, UserVacationTime, UserPaidTimeOff, UserActivities);
+
+        // if (remainingTime == TimeSpan.Zero)
+        // {
+        //     SetWarning(Localizer["shrinkage_warning_zero_remaining_time"]);
+        //     return;
+        // }
+
+        isAddingRow = true;
+        //OnEditOrAddChanged(true);
+
+        formActivityDto = new ActivityDto
+        {
+            Id = Guid.NewGuid(),
+            UserId = State.CurrentUser!.UserId,
+            ActivityType = ActivityTypeDto.Unspecified,
+            TeamId = DefaultTeamId,
+            ActivityTrackType = ActivityTrackTypeDto.Manual,
+            StartedAt = ShrinkageDate.ToDateTime(TimeOnly.MinValue),
+            StoppedAt = ShrinkageDate.ToDateTime(TimeOnly.MinValue),
+            CreatedBy = State.CurrentUser!.Email,
+        };
+        formContext = new EditContext(formActivityDto);
+        
+    }
+    private void UpdateActivity(ActivityDto activity)
+    {
+        if (formActivityDto != null)
+            formActivityDto = formActivityDto with
+            {
+                Id = activity.Id,
+                ActivityType = activity.ActivityType,
+                StartedAt = activity.StartedAt,
+                StoppedAt = activity.StoppedAt,
+                TeamId = activity.TeamId,
+                ActivityTrackType = activity.ActivityTrackType,
+            };
+    }
+
+    private void OnCancel()
+    {
+        isAddingRow = false;
+        //OnEditOrAddChanged(false);
+        isEditing = false;
+        ResetForm();
+        OnWarning(null);
+    }
+
+    private void SetWarning(string message)
+    {
+        OnWarning(message);
+        StateHasChanged();
+    }
+
+    private void ResetForm()
+    {
+        formActivityDto = new ActivityDto();
+        formContext = new EditContext(formActivityDto);
+        isAddingRow = false;
+        isEditing = false;
+        selectedActivity = null;
+        //OnEditOrAddChanged(false);
+        OnWarning(null);
+    }
+
+    private async Task SaveForm()
+    {
+        // if (formContext is null || formActivityDto is null)
+        //     return;
+
+        // if (activityFormRef is not null)
+        // {
+        //     var isValid = activityFormRef.RunAllValidations();
+        //     if (!isValid)
+        //         return;
+        // }
+
+        // if (!formContext.Validate())
+        //     return;
+
+        // formContext.NotifyValidationStateChanged();
+        // try
+        // {
+        //     await ShrinkageApi.SaveActivityByUserAsync(formActivityDto, TimeoutToken(Timeout));
+        //     ResetForm();
+        //     await OnAdjustmentsChanged();
+        //     OnEditOrAddChanged(false);
+        //     StateHasChanged();
+        // }
+        // catch (Exception ex) when (ex is BadRequestException or NotFoundException or SaveActivityException)
+        // {
+        //     string errorMessage = Localizer["shrinkage_error_save_activity"];
+        //     if (ex.InnerException is HttpRequestException ex2 && ex2.GetReasonMessage(ex) is { } reason)
+        //         errorMessage += " " + reason;
+        //     OnErrorStateChanged(errorMessage);
+        // }
+        // catch (OperationCanceledException) when (IsDisposing) { }
+        // catch (Exception ex)
+        // {
+        //     string errorMessage = Localizer["shrinkage_error_unexpected"];
+        //     if (ex.InnerException is HttpRequestException ex2 && ex2.GetReasonMessage(ex) is { } reason)
+        //         errorMessage += " " + reason;
+        //     OnErrorStateChanged(errorMessage);
+        // }
+    }
+    private void OnClick(ActivityDto activity)
+    {
+        selectedActivity = activity;
+        StateHasChanged();
+    }
+
+    private async Task HandleSubmit()
+    {
+       // await SaveForm();
+    }
+}
+
+
+      @* 
+
+        1- Placer d'abord le bouton "Ajouter une activité" en haut à droite de la liste des activités.
+        2- placer ma Table en dessous
+
+
+
+
+
+      *@

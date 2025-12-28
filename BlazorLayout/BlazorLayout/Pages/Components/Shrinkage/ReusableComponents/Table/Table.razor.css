@@ -1,0 +1,136 @@
+﻿
+::deep th,
+::deep td {
+    align-content: space-around;
+}
+
+.grid-table {
+    display: grid;
+    --num-columns: 1;
+    grid-template-columns: repeat(var(--num-columns), auto);
+    /* scrolling support */
+    --header-height: 50.4px;
+    --row-height: 48.8px;
+    height: fit-content;
+    /* noinspection CssUnresolvedCustomProperty */
+    max-height: calc(var(--header-height) + var(--row-height) * var(--max-visible-rows));
+    overflow-y: auto;
+}
+
+    .grid-table > thead,
+    .grid-table > tbody,
+    .grid-table > thead > tr,
+    .grid-table > tbody > ::deep tr {
+        display: grid;
+        grid-template-columns: subgrid;
+        grid-column: 1 / -1;
+    }
+
+    .grid-table > thead {
+        position: sticky;
+        top: 0;
+        background: white;
+    }
+
+    .grid-table > tbody > ::deep tr:first-child > td,
+    .grid-table > tbody > ::deep tr:focus > td,
+    .grid-table > tbody > ::deep tr[is-selected] > td,
+    .grid-table > tbody > ::deep tr:focus + tr > td,
+    .grid-table > tbody > ::deep tr[is-selected] + tr > td {
+        border-color: transparent;
+    }
+
+    .grid-table > thead > tr > ::deep th,
+    .grid-table > tbody > ::deep tr > td {
+        display: block;
+    }
+
+    /* @formatter:off */
+    .grid-table:has(> thead > tr > th:last-of-type:nth-child(2)) {
+        --num-columns: 2;
+    }
+
+    .grid-table:has(> thead > tr > th:last-of-type:nth-child(3)) {
+        --num-columns: 3;
+    }
+
+    .grid-table:has(> thead > tr > th:last-of-type:nth-child(4)) {
+        --num-columns: 4;
+    }
+
+    .grid-table:has(> thead > tr > th:last-of-type:nth-child(5)) {
+        --num-columns: 5;
+    }
+
+    .grid-table:has(> thead > tr > th:last-of-type:nth-child(6)) {
+        --num-columns: 6;
+    }
+
+    .grid-table:has(> thead > tr > th:last-of-type:nth-child(7)) {
+        --num-columns: 7;
+    }
+
+    .grid-table:has(> thead > tr > th:last-of-type:nth-child(8)) {
+        --num-columns: 8;
+    }
+
+    .grid-table:has(> thead > tr > th:last-of-type:nth-child(9)) {
+        --num-columns: 9;
+    }
+
+    .grid-table:has(> thead > tr > th:last-of-type:nth-child(10)) {
+        --num-columns: 10;
+    }
+
+    .grid-table:has(> thead > tr > th:last-of-type:nth-child(11)) {
+        --num-columns: 11;
+    }
+
+    .grid-table:has(> thead > tr > th:last-of-type:nth-child(12)) {
+        --num-columns: 12;
+    }
+
+    .grid-table:has(> thead > tr > th:last-of-type:nth-child(13)) {
+        --num-columns: 13;
+    }
+
+    .grid-table:has(> thead > tr > th:last-of-type:nth-child(14)) {
+        --num-columns: 14;
+    }
+
+    .grid-table:has(> thead > tr > th:last-of-type:nth-child(15)) {
+        --num-columns: 15;
+    }
+
+    .grid-table:has(> thead > tr > th:last-of-type:nth-child(16)) {
+        --num-columns: 16;
+    }
+
+    .grid-table:has(> thead > tr > th:last-of-type:nth-child(17)) {
+        --num-columns: 17;
+    }
+
+    .grid-table:has(> thead > tr > th:last-of-type:nth-child(18)) {
+        --num-columns: 18;
+    }
+
+    .grid-table:has(> thead > tr > th:last-of-type:nth-child(19)) {
+        --num-columns: 19;
+    }
+
+    .grid-table:has(> thead > tr > th:last-of-type:nth-child(20)) {
+        --num-columns: 20;
+    }
+/* @formatter:on */
+
+
+td[x-text] {
+    grid-column: 1/-1;
+    text-align: center;
+    color: #6c757d;
+    pointer-events: none;
+}
+
+    td[x-text]::after {
+        content: attr(x-text);
+    }

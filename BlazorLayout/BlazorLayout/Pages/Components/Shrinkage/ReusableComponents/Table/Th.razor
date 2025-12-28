@@ -1,0 +1,56 @@
+﻿@using System.Diagnostics.CodeAnalysis
+@using BlazorLayout.Shared
+@typeparam TItem where TItem : class
+
+<th x-sort="@(IsSortable? SortDirectionArrow: null)" @onclick="HandleClick" class="@CssClass" style="@style">@ChildContent</th>
+
+@code {
+    // Only valid inside <Table></Table>!
+
+    [Parameter]
+    public RenderFragment? ChildContent { get; init; }
+
+    [CascadingParameter]
+    private Table<TItem> Table { get; init; } = null!;
+
+    [Parameter]
+    public string? CssClass { get; init; }
+
+    [Parameter]
+    [SuppressMessage("ReSharper", "InconsistentNaming")]
+    public string? style { get; init; }
+
+    [Parameter]
+    public bool NotSortable { get; set; }
+
+    private uint? columnIndex;
+
+    public override async Task SetParametersAsync(ParameterView parameters)
+    {
+        await base.SetParametersAsync(parameters);
+        ArgumentNullException.ThrowIfNull(Table);
+        columnIndex ??= Table.ColumnIndex++;
+    }
+
+    private bool IsSortable => !NotSortable && Table.Comparer is not null && Table is { NotSortable: false, Items.Count: > 0 };
+
+    private string? SortDirectionArrow => Table.Comparer is null
+        ? null
+        : Table.SortOrders
+                .Cast<(uint columnIndex, SortOrder direction)?>()
+                .SingleOrDefault(kv => kv!.Value.columnIndex == columnIndex)?.direction switch
+        {
+            SortOrder.Ascending => "↓",
+            SortOrder.Descending => "↑",
+            _ => "↕",
+        };
+
+    void HandleClick()
+    {
+        if (IsSortable)
+        {
+            Table.Sort(columnIndex!.Value);
+        }
+    }
+
+}

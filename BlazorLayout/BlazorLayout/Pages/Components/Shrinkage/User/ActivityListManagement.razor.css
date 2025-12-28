@@ -1,0 +1,22 @@
+﻿.booked-status {
+    background: #68e184;
+    font-size: 100%;
+    font-weight: 700;
+    padding: .25em .75em;
+}
+
+.running-status {
+    background: #FFD853FF;
+    font-size: 100%;
+    font-weight: 700;
+    padding: .25em .75em;
+}
+
+.btn:hover {
+    background-color: lightgrey !important;
+}
+
+.icon-size {
+    width: 26px;
+    height: 25px;
+}

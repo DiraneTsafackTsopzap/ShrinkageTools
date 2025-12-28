@@ -1,0 +1,312 @@
+﻿
+@using BlazorLayout.Enums
+@using BlazorLayout.Modeles
+@using BlazorLayout.StateManagement
+@using BlazorLayout.Stores
+@using BlazorLayout.Utilities
+@using BlazorLayout.Validators
+@using Microsoft.Extensions.Localization
+
+
+@inherits StatefulComponent<ActivityEditor.StateT>
+
+<td>
+    <InputSelect @bind-Value="@newActivityType"
+                 @oninput="OnActivityTypeChanged"
+                 class="form-control form-control"
+                 @onkeydown="HandleSearchKeydown">
+        <option value="@ActivityTypeDto.Unspecified" disabled>-- @Localizer["shrinkage_message_select_activity"] --</option>
+        @foreach (ActivityTypeDto activityType in Enum.GetValues(typeof(ActivityTypeDto))
+                .Cast<ActivityTypeDto>()
+                .Where(a => a != ActivityTypeDto.Unspecified))
+        {
+            <option @key="activityType" value="@activityType">@activityType.ConvertToActivityTypeString()</option>
+        }
+
+    </InputSelect>
+</td>
+
+<td>
+    <input type="time"
+           class="form-control text-center"
+           @bind="@newStartedAt"
+           @oninput="OnStartedAtChanged"
+           @onblur="OnStartedAtBlurChanged"
+           @onkeydown="HandleSearchKeydown" />
+</td>
+
+<td>
+    <input type="time"
+           class="form-control text-center"
+           @bind="@newStoppedAt"
+           @oninput="OnStoppedAtChanged"
+           @onblur="OnStoppedAtBlurChanged"
+           @onkeydown="HandleSearchKeydown" />
+</td>
+
+<td class="col-dauer">
+    <input class="form-control  text-center" type="text" readonly
+           value="@ActivityDto.GetFormattedDuration()" />
+</td>
+@if (IsAdmin)
+{
+    <td></td>
+    <td></td>
+    <td>
+        <InputSelect @bind-Value="@newTeamId"
+                     @oninput="OnTeamChanged"
+                     class="form-control form-control"
+                     @onkeydown="HandleSearchKeydown">
+            <option value="@Guid.Empty" disabled>-- @Localizer["shrinkage_message_select_team"] --</option>
+            @foreach (var team in State.Teams.OrderBy(x => x.Name))
+            {
+                <option @key="team.Id" value="@team.Id">@team.Name</option>
+            }
+        </InputSelect>
+    </td>
+}
+else
+{
+    <td>
+        <InputSelect @bind-Value="@newTeamId"
+                     @oninput="OnTeamChanged"
+                     class="form-control form-control"
+                     @onkeydown="HandleSearchKeydown">
+            <option value="@Guid.Empty" disabled>-- @Localizer["shrinkage_message_select_team"] --</option>
+            @foreach (var team in State.Teams.OrderBy(x => x.Name))
+            {
+                <option @key="team.Id" value="@team.Id">@team.Name</option>
+            }
+        </InputSelect>
+    </td>
+
+    <td></td>
+}
+<td>
+    <div class="d-flex gap-2 justify-content-center">
+        <button type="submit"
+                class="btn me-2"
+                title="@Localizer["shrinkage_tooltip_save"]">
+            <img src="img/save-icon.svg" class="save-icon-size" alt="Save" />
+        </button>
+        <button type="button"
+                class="btn"
+                title="@Localizer["shrinkage_tooltip_cancel"]"
+                @onclick="HandleCancel">
+            <img src="img/cross-icon.svg" class="icon-size" alt="Cancel" />
+        </button>
+    </div>
+</td>
+
+@code {
+
+    [Parameter, EditorRequired]
+    public ActivityDto ActivityDto { get; set; } = new();
+
+    [Parameter, EditorRequired]
+    public EditContext EditContext { get; set; } = null!;
+
+    [Parameter, EditorRequired]
+    public Func<Task> OnValidSubmit { get; set; }
+
+    [Parameter, EditorRequired]
+    public Action OnCancel { get; set; }
+
+    [Parameter, EditorRequired]
+    public Action<string?> OnWarning { get; set; } = null!;
+
+    [Parameter, EditorRequired]
+    public Action<ActivityDto> OnActivityChanged { get; set; } = null!;
+
+    [Parameter, EditorRequired]
+    public DateOnly ShrinkageDate { get; set; }
+
+    [Parameter, EditorRequired]
+    public Guid DefaultTeamId { get; set; }
+
+    [Parameter, EditorRequired]
+    public TimeSpan UserPaidTime { get; set; }
+
+    [Parameter, EditorRequired]
+    public TimeSpan UserOvertime { get; set; }
+
+    [Parameter, EditorRequired]
+    public TimeSpan UserVacationTime { get; set; }
+
+    [Parameter, EditorRequired]
+    public TimeSpan UserPaidTimeOff { get; set; }
+
+    [Parameter, EditorRequired]
+    public bool IsAdmin { get; set; }
+
+    [Parameter, EditorRequired]
+    public IReadOnlyList<ActivityDto>? UserActivities { get; set; }
+
+    [Inject]
+    private IStringLocalizer Localizer { get; init; } = null!;
+
+    [Inject]
+    private TeamsStore TeamsStore { get; init; } = null!;
+
+    private TimeOnly? newStartedAt;
+    private TimeOnly? newStoppedAt;
+    private ActivityTypeDto newActivityType;
+    private Guid? newTeamId;
+
+    public sealed record StateT
+    {
+        public IReadOnlyList<TeamDto> Teams { get; init; } = [];
+    }
+
+    protected override StateT BuildState() => new()
+    {
+        Teams = TeamsStore.Teams,
+    };
+
+    private void HandleCancel()
+    {
+        OnWarning(null);
+        OnCancel();
+    }
+
+    protected override void OnInitialized()
+    {
+        //1- Initilize the localizer for the helper class
+         ExtensionsHelper.Localizer ??= Localizer;
+
+
+        newActivityType = ActivityDto.ActivityType;
+        newTeamId = ActivityDto.TeamId;
+        newStartedAt = TimeOnly.FromDateTime(ActivityDto.StartedAt.DateTime);
+        newStoppedAt = ActivityDto.StoppedAt!.Value.DateTime is { } dt
+            ? TimeOnly.FromDateTime(dt)
+            : null;
+    }
+
+    public bool RunAllValidations()
+    {
+        var warningMessage = ActivityValidator.ValidateAll(ActivityDto, UserPaidTime, UserOvertime, UserVacationTime, UserPaidTimeOff, UserActivities!, ShrinkageDate);
+        if (warningMessage is not null)
+        {
+            OnWarning(warningMessage);
+            return false;
+        }
+
+        return true;
+    }
+
+    private void OnActivityTypeChanged(ChangeEventArgs e)
+    {
+        OnWarning(null);
+        if (e.Value != null && e.Value.ToString() != nameof(ActivityTypeDto.Unspecified))
+        {
+            ActivityDto = ActivityDto with
+            {
+                ActivityType = e.Value.ToString()!.ConvertActivityTypeToEnum(),
+            };
+            OnActivityChanged.Invoke(ActivityDto);
+        }
+    }
+
+    private void OnStartedAtChanged(ChangeEventArgs e)
+    {
+        if (TimeOnly.TryParse(e.Value?.ToString(), out var parsed))
+        {
+            newStartedAt = parsed;
+        }
+    }
+
+    private void OnStartedAtBlurChanged(FocusEventArgs e)
+    {
+        OnWarning(null);
+        ActivityValidator.ChangeStartedAt(ActivityDto, newStartedAt!.Value, out var updatedStoppedAt, out var updatedActivity, ShrinkageDate);
+        UpdateActivity(updatedActivity);
+
+        newStoppedAt = updatedStoppedAt;
+        var warningMessage = ActivityValidator.ValidateAll(ActivityDto, UserPaidTime, UserOvertime, UserVacationTime, UserPaidTimeOff, UserActivities!, ShrinkageDate);
+        if (warningMessage is not null)
+        {
+            OnWarning(warningMessage);
+        }
+    }
+
+    private void UpdateActivity(ActivityDto updatedActivity)
+    {
+        ActivityDto = ActivityDto with
+        {
+            Id = updatedActivity.Id,
+            ActivityTrackType = updatedActivity.ActivityTrackType,
+            ActivityType = updatedActivity.ActivityType,
+            StartedAt = updatedActivity.StartedAt,
+            StoppedAt = updatedActivity.StoppedAt,
+            TeamId = updatedActivity.TeamId,
+        };
+        OnActivityChanged.Invoke(ActivityDto);
+    }
+
+    private void OnStoppedAtChanged(ChangeEventArgs e)
+    {
+        if (TimeOnly.TryParse(e.Value?.ToString(), out var parsed))
+        {
+            newStoppedAt = parsed;
+        }
+    }
+
+    private void OnStoppedAtBlurChanged(FocusEventArgs e)
+    {
+        OnWarning(null);
+        ActivityValidator.ChangeStoppedAt(ActivityDto, newStoppedAt!.Value, out var updatedStartedAt, out var updatedActivity, ShrinkageDate);
+        UpdateActivity(updatedActivity);
+
+        newStartedAt = updatedStartedAt;
+        var warningMessage = ActivityValidator.ValidateAll(ActivityDto, UserPaidTime, UserOvertime, UserVacationTime, UserPaidTimeOff, UserActivities!, ShrinkageDate);
+        if (warningMessage is not null)
+        {
+            OnWarning(warningMessage);
+        }
+    }
+
+    private void OnTeamChanged(ChangeEventArgs? e)
+    {
+        OnWarning(null);
+        if (Guid.TryParse(e?.Value?.ToString(), out var id))
+        {
+            var team = State.Teams.FirstOrDefault(x => x.Id == id);
+            if (team != null)
+            {
+                ActivityDto = ActivityDto with
+                {
+                    TeamId = id,
+                };
+                OnActivityChanged.Invoke(ActivityDto);
+            }
+
+            var warningMessage = ActivityValidator.ValidateAll(ActivityDto, UserPaidTime, UserOvertime, UserVacationTime, UserPaidTimeOff, UserActivities!, ShrinkageDate);
+            if (warningMessage is not null)
+            {
+                OnWarning(warningMessage);
+            }
+        }
+    }
+
+    private async Task HandleSearchKeydown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await HandleSubmit();
+        }
+    }
+
+    private async Task HandleSubmit()
+    {
+        var warningMessage = ActivityValidator.ValidateAll(ActivityDto, UserPaidTime, UserOvertime, UserVacationTime, UserPaidTimeOff, UserActivities!, ShrinkageDate);
+        if (warningMessage is not null)
+        {
+            OnWarning(warningMessage);
+            return;
+        }
+
+        await OnValidSubmit();
+    }
+
+}

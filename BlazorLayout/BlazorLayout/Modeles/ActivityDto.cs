@@ -1,12 +1,7 @@
-﻿using DataAccess.CRUD.Extensions;
+﻿using BlazorLayout.Enums;
 
-namespace DataAccess.CRUD.ModeleDto;
+namespace BlazorLayout.Modeles;
 
-public class SaveActivityDto
-{
-    public Guid CorrelationId { get; init; }
-    public ActivityDto Activity { get; init; } = null!;
-}
 public record ActivityDto
 {
     public Guid Id { get; init; }

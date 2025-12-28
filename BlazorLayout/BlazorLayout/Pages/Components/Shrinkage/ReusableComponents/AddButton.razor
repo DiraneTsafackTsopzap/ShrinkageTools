@@ -1,0 +1,20 @@
+﻿@using Microsoft.Extensions.Localization
+<button type="button" class="btn"
+        @onclick="OnClick"
+        disabled="@Disabled"
+        title="@Localizer["shrinkage_tooltip_add"]">
+    <img src="img/add-icon.svg" class="icon-size" alt="Add" />
+</button>
+
+@code {
+
+    [Parameter, EditorRequired]
+    public EventCallback OnClick { get; set; }
+
+    [Parameter, EditorRequired]
+    public bool Disabled { get; set; }
+
+    [Inject]
+    public IStringLocalizer Localizer { get; set; } = null!;
+
+}
