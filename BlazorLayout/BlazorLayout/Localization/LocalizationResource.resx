@@ -147,6 +147,12 @@
   <data name="shrinkage_absences" xml:space="preserve">
     <value>Absences</value>
   </data>
+  <data name="shrinkage_absence_type_sickness" xml:space="preserve">
+    <value>Sickness</value>
+  </data>
+  <data name="shrinkage_absence_type_vacation" xml:space="preserve">
+    <value>Vacation</value>
+  </data>
   <data name="shrinkage_activity_track_type_manual" xml:space="preserve">
     <value>Manual</value>
   </data>
@@ -206,6 +212,9 @@
   </data>
   <data name="shrinkage_label_from" xml:space="preserve">
     <value>From</value>
+  </data>
+  <data name="shrinkage_label_public_holiday" xml:space="preserve">
+    <value>Holiday</value>
   </data>
   <data name="shrinkage_label_status" xml:space="preserve">
     <value>Status</value>

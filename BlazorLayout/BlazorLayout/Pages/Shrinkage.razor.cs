@@ -53,7 +53,7 @@ namespace BlazorLayout.Pages
             return new StateT
             {
                 CurrentUser = UserStore.User,
-                Teams = TeamsStore.Teams ?? [],
+                Teams = TeamsStore.Teams 
             };
         }
 

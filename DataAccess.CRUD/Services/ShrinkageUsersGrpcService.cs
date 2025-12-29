@@ -1,10 +1,13 @@
-﻿using DataAccess.CRUD.Extensions;
+﻿using System.Diagnostics;
+using System.Text;
+using DataAccess.CRUD.Extensions;
 using DataAccess.CRUD.Modeles;
 using DataAccess.CRUD.Repositories;
 using DataAccess.CRUD.Repositories.TeamsRepository;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using GrpcShrinkageServiceTraining.Protobuf;
+using Status = GrpcShrinkageServiceTraining.Protobuf.Status;
 
 
 namespace DataAccess.CRUD.Services
@@ -223,8 +226,182 @@ namespace DataAccess.CRUD.Services
         }
 
 
+        // Get User Daily Summary
+        //Cette méthode gRPC reçoit une requête contenant CorrelationId et UserId, 
+        //et retourne un résumé des activités journalières de l'utilisateur (UserDailySummaryResponse).
+        public override async Task<GetUserDailySummaryResponse> GetUserDailySummary(GetUserDailySummaryRequest request, ServerCallContext context)
+        {
+            if (!request.UserId.TryParseToGuidNotNullOrEmpty(out var userId))
+            {
+                throw RpcExceptions.InvalidArgument($"Error with correlation id {request.CorrelationId} invalid UserId: {userId}");
+            }
+
+            var cancellationToken = context.CancellationToken;
+
+            //1-  Vérifier si l'utilisateur existe
+            var user = await _shrinkageUsersRepository.GetUserById(userId, cancellationToken);
+
+            if (user is null)
+            {
+                throw RpcExceptions.NotFound($"Error with correlation id {request.CorrelationId} user with Id {userId} not found");
+            }
+
+            //2- Vérifier si l'utilisateur a un TeamId valide
+            if (user.TeamId is null || user.TeamId.Value == Guid.Empty)
+            {
+                throw RpcExceptions.NotFound($"Error with correlation id {request.CorrelationId} TeamId is not set for the user with Id {userId}");
+            }
+
+            var teamId = user.TeamId.Value;
+            var userCreatedDate = DateOnly.FromDateTime(user.UserCreatedAt);
+            var startDate = DateOnly.FromDateTime(DateTime.UtcNow.Date.AddDays(-30));
+            var endDate = DateOnly.FromDateTime(DateTime.UtcNow);
+            if (endDate < userCreatedDate) endDate = userCreatedDate;
 
 
+            //3- Récupérer les données nécessaires en parallèle : Jours de Travail de l'utilisateur, Absences et Jours Fériés
+            var userDailyValuesTask = _shrinkageUsersRepository.GetUserDailyValuesByUserId(userId, userCreatedDate, endDate, cancellationToken);
+            var absencesTask = _shrinkageUsersRepository.GetAbsencesByUserId(userId, cancellationToken);
+            var publicHolidaysTask = _shrinkageUsersRepository.GetTeamsPublicHolidaysByTeamId(teamId, cancellationToken);
+
+            await Task.WhenAll(userDailyValuesTask, absencesTask, publicHolidaysTask);
+
+            var userDailyValues = await userDailyValuesTask;
+            var absences = await absencesTask;
+            var publicHolidays = await publicHolidaysTask;
+
+            var response = new GetUserDailySummaryResponse();
+            var summaries = response.UserDailySummaries;
+
+            var existingDates = new HashSet<DateOnly>();
+
+            foreach (var daily in userDailyValues)
+            {
+                var date = daily.ShrinkageDate;
+                existingDates.Add(date);
+                summaries.Add(new GetUserDailySummaryResponse.Types.UserDailySummary { Id = daily.Id, Date = date.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc).ToTimestamp(), WorkingDay = new GetUserDailySummaryResponse.Types.UserDailySummary.Types.WorkingDay { Status = daily.Status.ConvertToApiStatus() } });
+            }
+
+            foreach (var absence in absences)
+            {
+                var start = absence.StartDate;
+                var end = absence.EndDate;
+                if (end < start) continue;
+
+                for (var date = start; date <= end; date = date.AddDays(1))
+                {
+                    existingDates.Add(date);
+                    summaries.Add(new GetUserDailySummaryResponse.Types.UserDailySummary { Id = absence.Id, Date = date.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc).ToUniversalTime().ToTimestamp(), Absence = new GetUserDailySummaryResponse.Types.UserDailySummary.Types.Absence { Type = absence.AbsenceType.ConvertToApiAbsenceType() } });
+                }
+            }
+
+            foreach (var publicHoliday in publicHolidays)
+            {
+                var date = publicHoliday.AffectedDay;
+                var existingAbsence = response.UserDailySummaries.FirstOrDefault(x => DateOnly.FromDateTime(x.Date.ToDateTime()) == date && x.AttendanceTypeCase == GetUserDailySummaryResponse.Types.UserDailySummary.AttendanceTypeOneofCase.Absence);
+                var existingDailyValue = response.UserDailySummaries.FirstOrDefault(x => DateOnly.FromDateTime(x.Date.ToDateTime()) == date && x.AttendanceTypeCase == GetUserDailySummaryResponse.Types.UserDailySummary.AttendanceTypeOneofCase.WorkingDay);
+
+                if (existingAbsence != null)
+                {
+                    continue;
+                }
+
+                if (existingDailyValue != null)
+                {
+                    response.UserDailySummaries.Remove(existingDailyValue);
+                    response.UserDailySummaries.Add(new GetUserDailySummaryResponse.Types.UserDailySummary { Id = existingDailyValue.Id, Date = AsUtcDateTime(date).ToTimestamp(), PublicHoliday = new GetUserDailySummaryResponse.Types.UserDailySummary.Types.PublicHoliday { Status = existingDailyValue.WorkingDay.Status, } });
+                }
+                else
+                {
+                    response.UserDailySummaries.Add(new GetUserDailySummaryResponse.Types.UserDailySummary { Id = publicHoliday.Id, Date = AsUtcDateTime(date).ToTimestamp(), PublicHoliday = new GetUserDailySummaryResponse.Types.UserDailySummary.Types.PublicHoliday() });
+                    existingDates.Add(date);
+                }
+            }
+
+            for (var date = endDate; date >= userCreatedDate; date = date.AddDays(-1))
+            {
+                if (date.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday)
+                {
+                    var existingWorkingDay = summaries.FirstOrDefault(x => DateOnly.FromDateTime(x.Date.ToDateTime()) == date &&
+                                                                           x.AttendanceTypeCase == GetUserDailySummaryResponse.Types.UserDailySummary.AttendanceTypeOneofCase.WorkingDay);
+
+                    if (existingWorkingDay != null)
+                    {
+                        summaries.Remove(existingWorkingDay);
+                        summaries.Add(new GetUserDailySummaryResponse.Types.UserDailySummary { Id = existingWorkingDay.Id, Date = AsUtcDateTime(date).ToTimestamp(), Weekend = new GetUserDailySummaryResponse.Types.UserDailySummary.Types.Weekend { Status = existingWorkingDay.WorkingDay.Status } });
+                    }
+                    else if (!existingDates.Contains(date))
+                    {
+                        summaries.Add(new GetUserDailySummaryResponse.Types.UserDailySummary { Id = Guid.NewGuid(), Date = AsUtcDateTime(date).ToTimestamp(), Weekend = new GetUserDailySummaryResponse.Types.UserDailySummary.Types.Weekend() });
+                    }
+
+                    existingDates.Add(date);
+                    continue;
+                }
+
+                if (!existingDates.Contains(date))
+                {
+                    var paidTime = await _shrinkageUsersRepository.GetPaidTimeByUserIdAndDate(userId, date, cancellationToken);
+
+                    var existingDeletedUserDailyValue = await _shrinkageUsersRepository.GetDeletedUserDailyValuesByUserIdAndDate(userId, date, cancellationToken);
+                    if (existingDeletedUserDailyValue is not null)
+                    {
+                        existingDeletedUserDailyValue.Status = ShrinkageConstants.Pending;
+                        existingDeletedUserDailyValue.UpdatedAt = DateTime.UtcNow;
+                        existingDeletedUserDailyValue.UpdatedBy = userId;
+
+                        await _shrinkageUsersRepository.UpdateById(existingDeletedUserDailyValue, cancellationToken);
+                        summaries.Add(new GetUserDailySummaryResponse.Types.UserDailySummary { Id = existingDeletedUserDailyValue.Id, Date = AsUtcDateTime(date).ToTimestamp(), WorkingDay = new GetUserDailySummaryResponse.Types.UserDailySummary.Types.WorkingDay { Status = Status.Pending } });
+                    }
+                    else
+                    {
+                        var newId = Guid.NewGuid();
+                        await _shrinkageUsersRepository.Create(new ShrinkageUserDailyValuesDataModel
+                        {
+                            Id = newId,
+                            UserId = userId,
+                            TeamId = teamId,
+                            PaidTime = paidTime,
+                            Status = ShrinkageConstants.Pending,
+                            ShrinkageDate = date,
+                            CreatedAt = DateTime.UtcNow,
+                            CreatedBy = userId
+                        }, cancellationToken);
+                        summaries.Add(new GetUserDailySummaryResponse.Types.UserDailySummary { Id = newId, Date = AsUtcDateTime(date).ToTimestamp(), WorkingDay = new GetUserDailySummaryResponse.Types.UserDailySummary.Types.WorkingDay { Status = Status.Pending } });
+                    }
+
+                    existingDates.Add(date);
+                }
+            }
+
+            var itemsToBeRemoved = summaries
+                .Where(x =>
+                    DateOnly.FromDateTime(x.Date.ToDateTime()) > endDate ||
+                    DateOnly.FromDateTime(x.Date.ToDateTime()) < userCreatedDate ||
+                    (DateOnly.FromDateTime(x.Date.ToDateTime()) <= startDate &&
+                     (
+                         x.AttendanceTypeCase == GetUserDailySummaryResponse.Types.UserDailySummary.AttendanceTypeOneofCase.PublicHoliday ||
+                         x.AttendanceTypeCase == GetUserDailySummaryResponse.Types.UserDailySummary.AttendanceTypeOneofCase.Absence ||
+                         (x.AttendanceTypeCase == GetUserDailySummaryResponse.Types.UserDailySummary.AttendanceTypeOneofCase.WorkingDay &&
+                          x.WorkingDay.Status != Status.Pending &&
+                          x.WorkingDay.Status != Status.Rejected) ||
+                         (x.AttendanceTypeCase == GetUserDailySummaryResponse.Types.UserDailySummary.AttendanceTypeOneofCase.Weekend &&
+                          x.Weekend.Status != Status.Pending &&
+                          x.Weekend.Status != Status.Rejected &&
+                          x.Weekend.Status != Status.Unspecified)
+                     )))
+                .ToList();
+
+            foreach (var item in itemsToBeRemoved)
+            {
+                summaries.Remove(item);
+            }
+
+            return response;
+        }
+
+        private static DateTime AsUtcDateTime(DateOnly date) =>
+            date.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
     }
 }
 

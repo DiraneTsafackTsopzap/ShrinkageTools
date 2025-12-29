@@ -1,4 +1,10 @@
-﻿namespace ShrinkageGrpcClientApi.Enums;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace DataAccess.CRUD.EnumsModels;
 public enum ActivityTypeDto
 {
     Unspecified = 0,
@@ -9,4 +15,3 @@ public enum ActivityTypeDto
     ProductiveNotMeasurable = 5,
     Others = 6
 }
-

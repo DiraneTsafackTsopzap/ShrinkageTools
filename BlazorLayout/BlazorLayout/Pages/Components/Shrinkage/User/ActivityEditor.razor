@@ -185,6 +185,7 @@ else
 
     public bool RunAllValidations()
     {
+        
         var warningMessage = ActivityValidator.ValidateAll(ActivityDto, UserPaidTime, UserOvertime, UserVacationTime, UserPaidTimeOff, UserActivities!, ShrinkageDate);
         if (warningMessage is not null)
         {

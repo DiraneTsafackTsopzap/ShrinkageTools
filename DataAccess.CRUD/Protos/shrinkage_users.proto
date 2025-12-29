@@ -18,6 +18,9 @@ service ShrinkageProtoService {
    // Save Activity
    rpc SaveActivity(SaveActivityRequest) returns (SaveActivityResponse) {}
 
+   // Get User Daily Summary
+     rpc GetUserDailySummary(GetUserDailySummaryRequest) returns (GetUserDailySummaryResponse) {}
+
 }
 
 message GetUserByEmailRequest {
@@ -156,7 +159,50 @@ enum AbsenceType {
   // Sickness
   ABSENCE_TYPE_SICKNESS = 2;
 }
+message GetUserDailySummaryRequest {
 
+  AppUuid correlation_id = 1;
+  AppUuid user_id = 2;
+}
+
+message GetUserDailySummaryResponse {
+  // List of user daily summary.
+  repeated UserDailySummary user_daily_summaries = 1;
+
+  message UserDailySummary {
+    
+    AppUuid id = 1;
+    // Date of the daily user summary.
+    google.protobuf.Timestamp date = 2;
+
+    oneof attendance_type {
+      Absence absence = 3;
+      WorkingDay working_day = 4;
+      PublicHoliday public_holiday = 5;
+      Weekend weekend = 6;
+    }
+
+    message Absence {
+      // Type of absence: Vacation or Sickness. : Type Enum
+      AbsenceType type = 7;
+    }
+
+    message WorkingDay {
+      // Status of the daily value.
+      Status status = 8;
+    }
+
+    message PublicHoliday {
+      // Optional status if the user works on a public holiday.
+      Status status = 9;
+    }
+
+    message Weekend {
+      // Optional status if the user works on a weekend.
+      Status status = 10;
+    }
+  }
+}
 
 // 3- Definir les autres Messages necessaires et 
 

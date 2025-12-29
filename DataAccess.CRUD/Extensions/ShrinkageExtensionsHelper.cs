@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using DataAccess.CRUD.EnumsModels;
 using GrpcShrinkageServiceTraining.Protobuf;
 
 namespace DataAccess.CRUD.Extensions;

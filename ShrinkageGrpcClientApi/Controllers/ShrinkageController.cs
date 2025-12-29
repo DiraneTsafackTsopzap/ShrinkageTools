@@ -1,9 +1,11 @@
 ﻿using DataAccess.CRUD.Mapper;
 using DataAccess.CRUD.ModeleDto;
 using DataAccess.CRUD.Modeles;
+using DataAccess.CRUD.ModelesRequests;
 using Grpc.Core;
 using GrpcShrinkageServiceTraining.Protobuf;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 
 namespace ShrinkageGrpcClientApi.Controllers
 {
@@ -138,7 +140,7 @@ namespace ShrinkageGrpcClientApi.Controllers
         // Save Activity
         //http://localhost:5000/api/shrinkage/save-user-activity
         [HttpPost("save-user-activity")]
-        public async Task SaveActivity([FromBody] SaveActivityDto input, CancellationToken cancellationToken)
+        public async Task SaveActivity([FromBody] SaveActivityRequest_M input, CancellationToken cancellationToken)
         {
             using var __ = _logger.BeginScope(new Dictionary<string, object>
             {
@@ -166,8 +168,59 @@ namespace ShrinkageGrpcClientApi.Controllers
             }
         }
 
+
+
+        // Get Users Daily Summary
+        // http://localhost:5000/api/shrinkage/get-user-daily-summary : POST
+        //{
+        //  "correlationId": "b9f2190f-d38c-426e-bbaa-512a5ff74f8e",
+        //  "userId": "b4e5c1a9-8f72-4d6b-9a1c-3e7f5d0b2a66"
+        //}
+
+        // S'assurer ici que le userId existe bien dans la base, sinon 404 NotFound
+        [HttpPost("get-user-daily-summary")]
+        public async Task<IReadOnlyList<UserDailySummaryDto>> GetUserDailySummary([FromBody] GetUserDailySummaryRequest_M input, CancellationToken cancellationToken)
+        {
+            using var __ = _logger.BeginScope(new Dictionary<string, object>
+            {
+                ["CorrelationId"] = input.CorrelationId,
+                ["UserId"] = input.UserId,
+            });
+            try
+            {
+                var grpcRequest = new GetUserDailySummaryRequest
+                {
+                    CorrelationId = input.CorrelationId,
+                    UserId = input.UserId,
+                };
+
+                var grpcResponse = await _grpcClient
+                    .GetUserDailySummaryAsync(grpcRequest, cancellationToken: cancellationToken);
+
+                var vm = GrpcMapper.MapFromGrpcToViewModel(grpcResponse);
+
+                return vm;
+            }
+            catch (RpcException ex) when (ex.StatusCode == global::Grpc.Core.StatusCode.InvalidArgument)
+            {
+                _logger.LogError(ex, "Failed to get user daily summary");
+                throw new BadHttpRequestException(ex.Message, StatusCodes.Status400BadRequest);
+            }
+            catch (RpcException ex) when (ex.StatusCode == global::Grpc.Core.StatusCode.NotFound)
+            {
+                _logger.LogError(ex, "Failed to get user daily summary");
+                throw new BadHttpRequestException(ex.Message, StatusCodes.Status404NotFound);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to get user daily summary");
+                throw new BadHttpRequestException("Failed to get user daily summary", StatusCodes.Status500InternalServerError, ex);
+            }
+        }
+
     }
 }
+
 
 // Exemple de Post : Save Activity ici 
 // Methode: POST : POST 

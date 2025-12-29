@@ -1,12 +1,11 @@
-﻿using DataAccess.CRUD.Extensions;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using DataAccess.CRUD.EnumsModels;
 
 namespace DataAccess.CRUD.ModeleDto;
-
-public class SaveActivityDto
-{
-    public Guid CorrelationId { get; init; }
-    public ActivityDto Activity { get; init; } = null!;
-}
 public record ActivityDto
 {
     public Guid Id { get; init; }
@@ -19,5 +18,4 @@ public record ActivityDto
     public string CreatedBy { get; init; } = null!;
     public string? UpdatedBy { get; init; }
 }
-
 

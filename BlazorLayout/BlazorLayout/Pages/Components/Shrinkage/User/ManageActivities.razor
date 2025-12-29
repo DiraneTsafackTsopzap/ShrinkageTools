@@ -1,6 +1,9 @@
-﻿@using BlazorLayout.Pages.Components.Shared
+﻿
+@using BlazorLayout.Enums
+@using BlazorLayout.Pages.Components.Shared
 @using BlazorLayout.Shared
 @using BlazorLayout.StateManagement
+@using BlazorLayout.Utilities
 
 @inherits StatefulComponent<ManageActivities.StateT>
 
@@ -76,6 +79,32 @@
                             <legend>
                                 @Localizer["shrinkage_summary_of_the_date_SD", ShrinkageDate.GetDayName(), ShrinkageDate]
                             </legend>
+
+
+
+                             @if (State.Summaries.Any(x => x.Date == ShrinkageDate && x.AbsenceType != AbsenceTypeDto.Unspecified))
+                            {
+                                var absence = State.Summaries.FirstOrDefault(x => x.Date == ShrinkageDate);
+                                <div class="d-flex justify-content-center" style="font-weight:bold ">@absence?.AbsenceType.ConvertToAbsenceTypeString()</div>
+                            }
+                            else if (State.Summaries.Any(x => x.Date == ShrinkageDate && x.PublicHoliday != null && x.Status == StatusDto.Unspecified))
+                            {
+                                <div class="d-flex justify-content-center" style="font-weight:bold ">@Localizer["shrinkage_label_public_holiday"]</div>
+                            }
+                            else if (State.Summaries.Any(x => x.Date == ShrinkageDate
+                                                              && (x.Date.DayOfWeek == DayOfWeek.Saturday
+                                                                  || x.Date.DayOfWeek == DayOfWeek.Sunday)
+                                                              && x.Status == StatusDto.Unspecified))
+                            {
+                                <div class="d-flex justify-content-center" style="font-weight:bold ">@ShrinkageDate.GetDayName()</div>
+                            }
+                            else
+                            {
+
+
+
+
+
                            
                            
                                  <div class="mb-4">
@@ -138,7 +167,7 @@
                                         
                                     </button>
                                 </div>
-                           
+                           }
                         </fieldset> 
                     </div>
                 </div>

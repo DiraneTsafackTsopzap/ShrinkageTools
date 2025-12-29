@@ -1,4 +1,5 @@
 ﻿@using BlazorLayout.Enums
+@using BlazorLayout.Extensions
 @using BlazorLayout.Gateways
 @using BlazorLayout.Modeles
 @using BlazorLayout.Pages.Components.Shrinkage.ReusableComponents
@@ -11,6 +12,7 @@
 @inherits StatefulComponent<ActivityListManagement.StateT>
 
 <div class="d-flex justify-content-end mb-2">
+    @* 1- Ajout du Bouton Pr declencher le ShowAddRow *@
     <AddButton OnClick="@ShowAddRow" Disabled="@(isAddingRow || isEditing)" />
 </div>
 <EditForm EditContext="formContext" OnValidSubmit="HandleSubmit">
@@ -142,6 +144,10 @@
     [Parameter, EditorRequired]
     public TimeSpan UserPaidTimeOff { get; set; }
 
+    [Parameter, EditorRequired]
+    public Action<string?> OnErrorStateChanged { get; set; }
+
+    private const int Timeout = 30_000;
 
     public sealed record StateT
     {
@@ -260,43 +266,43 @@
 
     private async Task SaveForm()
     {
-        // if (formContext is null || formActivityDto is null)
-        //     return;
+        if (formContext is null || formActivityDto is null)
+            return;
 
-        // if (activityFormRef is not null)
-        // {
-        //     var isValid = activityFormRef.RunAllValidations();
-        //     if (!isValid)
-        //         return;
-        // }
+        if (activityFormRef is not null)
+        {
+            var isValid = activityFormRef.RunAllValidations();
+            if (!isValid)
+                return;
+        }
 
-        // if (!formContext.Validate())
-        //     return;
+        if (!formContext.Validate())
+            return;
 
-        // formContext.NotifyValidationStateChanged();
-        // try
-        // {
-        //     await ShrinkageApi.SaveActivityByUserAsync(formActivityDto, TimeoutToken(Timeout));
-        //     ResetForm();
-        //     await OnAdjustmentsChanged();
-        //     OnEditOrAddChanged(false);
-        //     StateHasChanged();
-        // }
-        // catch (Exception ex) when (ex is BadRequestException or NotFoundException or SaveActivityException)
-        // {
-        //     string errorMessage = Localizer["shrinkage_error_save_activity"];
-        //     if (ex.InnerException is HttpRequestException ex2 && ex2.GetReasonMessage(ex) is { } reason)
-        //         errorMessage += " " + reason;
-        //     OnErrorStateChanged(errorMessage);
-        // }
-        // catch (OperationCanceledException) when (IsDisposing) { }
-        // catch (Exception ex)
-        // {
-        //     string errorMessage = Localizer["shrinkage_error_unexpected"];
-        //     if (ex.InnerException is HttpRequestException ex2 && ex2.GetReasonMessage(ex) is { } reason)
-        //         errorMessage += " " + reason;
-        //     OnErrorStateChanged(errorMessage);
-        // }
+        formContext.NotifyValidationStateChanged();
+        try
+        {
+            await ShrinkageApi.SaveActivityByUserAsync(formActivityDto, TimeoutToken(Timeout));
+            ResetForm();
+            // await OnAdjustmentsChanged();
+            // OnEditOrAddChanged(false);
+            StateHasChanged();
+        }
+        catch (Exception ex) when (ex is BadRequestException or NotFoundException or SaveActivityException)
+        {
+            string errorMessage = Localizer["shrinkage_error_save_activity"];
+            if (ex.InnerException is HttpRequestException ex2 && ex2.GetReasonMessage(ex) is { } reason)
+                errorMessage += " " + reason;
+            OnErrorStateChanged(errorMessage);
+        }
+        catch (OperationCanceledException) when (IsDisposing) { }
+        catch (Exception ex)
+        {
+            string errorMessage = Localizer["shrinkage_error_unexpected"];
+            if (ex.InnerException is HttpRequestException ex2 && ex2.GetReasonMessage(ex) is { } reason)
+                errorMessage += " " + reason;
+            OnErrorStateChanged(errorMessage);
+        }
     }
     private void OnClick(ActivityDto activity)
     {

@@ -29,7 +29,7 @@ namespace DataAccess.CRUD.DapperContext
                 .Replace("$POSTGRES_PASSWORD", pwd);
 
             _connection = new NpgsqlConnection(final);
-            Console.WriteLine("ConnectionString : " + final);
+           // Console.WriteLine("ConnectionString : " + final);
         }
 
 

@@ -15,7 +15,7 @@ public record UserDailyValuesDto
     public Guid Id { get; init; }
     public Guid UserId { get; init; }
     public Guid TeamId { get; init; }
-    public Status Status { get; init; }
+    public StatusDto Status { get; init; }
     public string? Comment { get; init; }
     public DateTime CreatedAt { get; init; }
     public string CreatedBy { get; init; } = null!;

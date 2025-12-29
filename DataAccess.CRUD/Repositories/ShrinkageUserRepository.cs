@@ -312,5 +312,237 @@ WHERE id = @{nameof(ShrinkageActivityDataModel.Id)};
             return await connection.ExecuteAsync(sql, activity);
         }
 
+        public async Task<ShrinkageUserDataModel?> GetUserById(Guid id, CancellationToken token)
+        {
+            const string sql = @$"
+SELECT 
+    su.id            AS {nameof(ShrinkageUserDataModel.Id)},
+    su.user_email    AS {nameof(ShrinkageUserDataModel.Email)},
+    su.team_id       AS {nameof(ShrinkageUserDataModel.TeamId)},
+    su.created_at    AS {nameof(ShrinkageUserDataModel.UserCreatedAt)}
+FROM shrinkage_users su
+WHERE su.id = @Id
+  AND su.deleted_at IS NULL;
+";
+
+            var parameters = new { Id = id };
+
+            await using var connection = await GetOpenConnectionAsync(token);
+
+            return await connection.QueryFirstOrDefaultAsync<ShrinkageUserDataModel>(sql, parameters);
+        }
+
+        public async Task<List<ShrinkageUserDailyValuesDataModel>> GetUserDailyValuesByUserId(
+    Guid id,
+    DateOnly startDate,
+    DateOnly endDate,
+    CancellationToken token)
+        {
+            const string sql = @$"
+SELECT 
+    id               AS {nameof(ShrinkageUserDailyValuesDataModel.Id)},
+    status           AS {nameof(ShrinkageUserDailyValuesDataModel.Status)},
+    comment          AS {nameof(ShrinkageUserDailyValuesDataModel.Comment)},
+    shrinkage_date   AS {nameof(ShrinkageUserDailyValuesDataModel.ShrinkageDate)}
+FROM shrinkage_user_daily_values
+WHERE user_id = @Id
+  AND shrinkage_date >= @StartDate
+  AND shrinkage_date <= @EndDate
+  AND deleted_at IS NULL;
+";
+
+            var parameters = new
+            {
+                Id = id,
+                StartDate = startDate,
+                EndDate = endDate
+            };
+
+            await using var connection = await GetOpenConnectionAsync(token);
+
+            var result = await connection.QueryAsync<ShrinkageUserDailyValuesDataModel>(sql, parameters);
+
+            return result.ToList();
+        }
+
+        public async Task<List<ShrinkageAbsenceDataModel>> GetAbsencesByUserId(Guid id, CancellationToken token)
+        {
+            const string sql = @$"
+SELECT 
+    a.id             AS {nameof(ShrinkageAbsenceDataModel.Id)},
+    a.absence_type   AS {nameof(ShrinkageAbsenceDataModel.AbsenceType)},
+    a.start_date     AS {nameof(ShrinkageAbsenceDataModel.StartDate)},
+    a.end_date       AS {nameof(ShrinkageAbsenceDataModel.EndDate)}
+FROM shrinkage_user_absences a
+WHERE a.user_id = @Id
+  AND a.deleted_at IS NULL;
+";
+
+            var parameters = new { Id = id };
+
+            await using var connection = await GetOpenConnectionAsync(token);
+
+            var result = await connection.QueryAsync<ShrinkageAbsenceDataModel>(sql, parameters);
+
+            return result.ToList();
+        }
+
+        public async Task<List<ShrinkageTeamsPublicHolidaysDataModel>> GetTeamsPublicHolidaysByTeamId(Guid teamId, CancellationToken token)
+        {
+            const string sql = @$"
+SELECT 
+    id            AS {nameof(ShrinkageTeamsPublicHolidaysDataModel.Id)},
+    created_at    AS {nameof(ShrinkageTeamsPublicHolidaysDataModel.CreatedAt)},
+    created_by    AS {nameof(ShrinkageTeamsPublicHolidaysDataModel.CreatedBy)},
+    deleted_at    AS {nameof(ShrinkageTeamsPublicHolidaysDataModel.DeletedAt)},
+    deleted_by    AS {nameof(ShrinkageTeamsPublicHolidaysDataModel.DeletedBy)},
+    title         AS {nameof(ShrinkageTeamsPublicHolidaysDataModel.Title)},
+    affected_day  AS {nameof(ShrinkageTeamsPublicHolidaysDataModel.AffectedDay)},
+    team_ids      AS {nameof(ShrinkageTeamsPublicHolidaysDataModel.TeamIds)}
+FROM shrinkage_team_public_holidays
+WHERE team_ids @> ARRAY[@TeamId]::uuid[]
+  AND deleted_at IS NULL;
+";
+
+            var parameters = new { TeamId = teamId };
+
+            await using var connection = await GetOpenConnectionAsync(token);
+
+            var result = await connection.QueryAsync<ShrinkageTeamsPublicHolidaysDataModel>(sql, parameters);
+
+            return result.ToList();
+        }
+
+        public async Task<double> GetPaidTimeByUserIdAndDate(Guid userId, DateOnly shrinkageDate, CancellationToken token)
+        {
+            var dayOfWeek = shrinkageDate.DayOfWeek;
+
+            var paidTimeColumn = dayOfWeek switch
+            {
+                DayOfWeek.Monday => "paid_time_monday",
+                DayOfWeek.Tuesday => "paid_time_tuesday",
+                DayOfWeek.Wednesday => "paid_time_wednesday",
+                DayOfWeek.Thursday => "paid_time_thursday",
+                DayOfWeek.Friday => "paid_time_friday",
+                DayOfWeek.Saturday => "paid_time_saturday",
+                DayOfWeek.Sunday => "paid_time_saturday", // ✅ fallback logique
+                _ => throw new ArgumentOutOfRangeException(nameof(shrinkageDate), "Invalid day of week")
+            };
+
+            var sql = $@"
+SELECT {paidTimeColumn}
+FROM shrinkage_user_paid_time
+WHERE user_id = @Id
+  AND valid_from <= @Date
+  AND deleted_at IS NULL
+ORDER BY valid_from DESC, created_at DESC
+LIMIT 1;
+";
+
+            var parameters = new { Id = userId, Date = shrinkageDate };
+
+            await using var connection = await GetOpenConnectionAsync(token);
+
+            return await connection.ExecuteScalarAsync<double>(sql, parameters);
+        }
+
+        public async Task<ShrinkageUserDailyValuesDataModel?> GetDeletedUserDailyValuesByUserIdAndDate(Guid id, DateOnly date, CancellationToken token)
+        {
+            const string sql = $@"
+SELECT DISTINCT ON (udv.id)
+       udv.id                 AS {nameof(ShrinkageUserDailyValuesDataModel.Id)}, 
+       udv.user_id            AS {nameof(ShrinkageUserDailyValuesDataModel.UserId)},
+       udv.team_id            AS {nameof(ShrinkageUserDailyValuesDataModel.TeamId)},
+       udv.paid_time          AS {nameof(ShrinkageUserDailyValuesDataModel.PaidTime)},
+       udv.paid_time_off      AS {nameof(ShrinkageUserDailyValuesDataModel.PaidTimeOff)},
+       udv.overtime           AS {nameof(ShrinkageUserDailyValuesDataModel.Overtime)},
+       udv.vacation_time      AS {nameof(ShrinkageUserDailyValuesDataModel.VacationTime)},
+       udv.status             AS {nameof(ShrinkageUserDailyValuesDataModel.Status)},
+       udv.comment            AS {nameof(ShrinkageUserDailyValuesDataModel.Comment)},
+       udv.created_at         AS {nameof(ShrinkageUserDailyValuesDataModel.CreatedAt)},
+       udv.created_by         AS {nameof(ShrinkageUserDailyValuesDataModel.CreatedBy)},
+       u1.user_email          AS {nameof(ShrinkageUserDailyValuesDataModel.CreatedByUserEmail)},
+       udv.updated_at         AS {nameof(ShrinkageUserDailyValuesDataModel.UpdatedAt)},
+       udv.updated_by         AS {nameof(ShrinkageUserDailyValuesDataModel.UpdatedBy)},
+       u2.user_email          AS {nameof(ShrinkageUserDailyValuesDataModel.UpdatedByUserEmail)},
+       udv.deleted_at         AS {nameof(ShrinkageUserDailyValuesDataModel.DeletedAt)}
+FROM shrinkage_user_daily_values udv
+LEFT JOIN shrinkage_users u1 ON u1.id = udv.created_by
+LEFT JOIN shrinkage_users u2 ON u2.id = udv.updated_by
+WHERE udv.user_id = @Id
+  AND DATE(udv.shrinkage_date) = @ShrinkageDate
+  AND udv.deleted_at IS NOT NULL
+ORDER BY udv.id, udv.created_at DESC;
+";
+
+            var parameters = new { Id = id, ShrinkageDate = date };
+
+            await using var connection = await GetOpenConnectionAsync(token);
+
+            return await connection.QueryFirstOrDefaultAsync<ShrinkageUserDailyValuesDataModel>(sql, parameters);
+        }
+
+
+
+        public async Task<int> UpdateById(ShrinkageUserDailyValuesDataModel model, CancellationToken token)
+        {
+            const string sql = $@"
+UPDATE shrinkage_user_daily_values
+SET
+    status         = @{nameof(ShrinkageUserDailyValuesDataModel.Status)},
+    paid_time      = @{nameof(ShrinkageUserDailyValuesDataModel.PaidTime)},
+    paid_time_off  = @{nameof(ShrinkageUserDailyValuesDataModel.PaidTimeOff)},
+    overtime       = @{nameof(ShrinkageUserDailyValuesDataModel.Overtime)},
+    vacation_time  = @{nameof(ShrinkageUserDailyValuesDataModel.VacationTime)},
+    updated_at     = @{nameof(ShrinkageUserDailyValuesDataModel.UpdatedAt)},
+    updated_by     = @{nameof(ShrinkageUserDailyValuesDataModel.UpdatedBy)},
+    deleted_at     = NULL,
+    deleted_by     = NULL
+WHERE id = @{nameof(ShrinkageUserDailyValuesDataModel.Id)};
+";
+
+            await using var connection = await GetOpenConnectionAsync(token);
+
+            return await connection.ExecuteAsync(sql, model);
+        }
+
+        public async Task<int> Create(ShrinkageUserDailyValuesDataModel dailyValue, CancellationToken token)
+        {
+            const string sql = $@"
+INSERT INTO shrinkage_user_daily_values (
+    id,
+    user_id,
+    team_id,
+    paid_time,                                     
+    paid_time_off,
+    overtime,
+    vacation_time,
+    status,
+    created_at,
+    created_by,
+    shrinkage_date
+) 
+VALUES (
+    @{nameof(ShrinkageUserDailyValuesDataModel.Id)},
+    @{nameof(ShrinkageUserDailyValuesDataModel.UserId)},
+    @{nameof(ShrinkageUserDailyValuesDataModel.TeamId)},
+    @{nameof(ShrinkageUserDailyValuesDataModel.PaidTime)},
+    @{nameof(ShrinkageUserDailyValuesDataModel.PaidTimeOff)},
+    @{nameof(ShrinkageUserDailyValuesDataModel.Overtime)},
+    @{nameof(ShrinkageUserDailyValuesDataModel.VacationTime)},
+    @{nameof(ShrinkageUserDailyValuesDataModel.Status)},
+    @{nameof(ShrinkageUserDailyValuesDataModel.CreatedAt)},
+    @{nameof(ShrinkageUserDailyValuesDataModel.CreatedBy)},
+    @{nameof(ShrinkageUserDailyValuesDataModel.ShrinkageDate)}
+);";
+
+            await using var connection = await GetOpenConnectionAsync(token);
+
+            return await connection.ExecuteAsync(sql, dailyValue);
+        }
+
+
     }
+
+
 }

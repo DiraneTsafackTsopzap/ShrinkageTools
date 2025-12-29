@@ -1,6 +1,8 @@
-﻿using DataAccess.CRUD.Extensions;
+﻿using DataAccess.CRUD.EnumsModels;
+using DataAccess.CRUD.Extensions;
 using DataAccess.CRUD.ModeleDto;
 using DataAccess.CRUD.Modeles;
+using DataAccess.CRUD.ModelesRequests;
 using Google.Protobuf.WellKnownTypes;
 using GrpcShrinkageServiceTraining.Protobuf;
 using PaidTime = DataAccess.CRUD.Modeles.PaidTime;
@@ -43,7 +45,7 @@ namespace DataAccess.CRUD.Mapper
             }).ToList();
         }
 
-        public static SaveActivityRequest MapToSaveActivityRequest(SaveActivityDto activity)
+        public static SaveActivityRequest MapToSaveActivityRequest(SaveActivityRequest_M activity)
         {
             var apiRequest = new SaveActivityRequest
             {
@@ -65,6 +67,63 @@ namespace DataAccess.CRUD.Mapper
                 },
             };
             return apiRequest;
+        }
+
+
+        public static IReadOnlyList<UserDailySummaryDto> MapFromGrpcToViewModel(GetUserDailySummaryResponse summary)
+        {
+            var response = new List<UserDailySummaryDto>();
+
+            foreach (var item in summary.UserDailySummaries)
+            {
+                var userDailySummary = new UserDailySummaryDto
+                {
+                    Id = item.Id.ToGuid(),
+                    Date = DateOnly.FromDateTime(item.Date.ToDateTime()),
+                };
+
+                switch (item.AttendanceTypeCase)
+                {
+                    case GetUserDailySummaryResponse.Types.UserDailySummary.AttendanceTypeOneofCase.WorkingDay:
+                        userDailySummary = userDailySummary with
+                        {
+                            Status = ShrinkageExtensionsHelper.FromGrpcStatus(item.WorkingDay.Status),
+                        };
+                        break;
+
+                    case GetUserDailySummaryResponse.Types.UserDailySummary.AttendanceTypeOneofCase.Absence:
+                        if (item.Absence.Type != AbsenceType.Unspecified)
+                        {
+                            userDailySummary = userDailySummary with
+                            {
+                                AbsenceType = item.Absence.Type.FromGrpcAbsenceType(),
+                            };
+                        }
+
+                        break;
+                    case GetUserDailySummaryResponse.Types.UserDailySummary.AttendanceTypeOneofCase.PublicHoliday:
+                        userDailySummary = userDailySummary with
+                        {
+                            Status = ShrinkageExtensionsHelper.FromGrpcStatus(item.PublicHoliday.Status),
+                            PublicHoliday = new PublicHolidayDto(),
+                        };
+                        break;
+                    case GetUserDailySummaryResponse.Types.UserDailySummary.AttendanceTypeOneofCase.Weekend:
+                        userDailySummary = userDailySummary with
+                        {
+                            Status = ShrinkageExtensionsHelper.FromGrpcStatus(item.Weekend.Status),
+                            Weekend = new WeekendDto(),
+                        };
+                        break;
+                    case GetUserDailySummaryResponse.Types.UserDailySummary.AttendanceTypeOneofCase.None:
+                    default:
+                        throw new ArgumentOutOfRangeException(nameof(item.AttendanceTypeCase), item.AttendanceTypeCase, null);
+                }
+
+                response.Add(userDailySummary);
+            }
+
+            return response;
         }
 
     }

@@ -10,10 +10,13 @@ namespace BlazorAnalyzer;
 [Generator]
 public class StoreAutoSubscribeGenerator : IIncrementalGenerator
 {
+    // https://github.com/dotnet/roslyn/blob/main/docs/features/incremental-generators.md
+    // https://github.com/dotnet/roslyn/blob/main/docs/features/incremental-generators.cookbook.md#augment-user-code
+    // Another good resource: https://andrewlock.net/creating-a-source-generator-part-1-creating-an-incremental-source-generator/
+
     [SuppressMessage("ReSharper", "RawStringCanBeSimplified")]
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
-        // 1️⃣ Génération de l'attribut AutoSubscribe
         context.RegisterPostInitializationOutput(static postInitializationContext =>
         {
             postInitializationContext.AddSource(
@@ -22,48 +25,51 @@ public class StoreAutoSubscribeGenerator : IIncrementalGenerator
                 namespace BlazorLayout.StateManagement;
 
                 /// <summary>
-                /// Put this on StoreBase-derived store classes and its partial properties
-                /// to generate their accessors and auto-subscription logic.
+                /// Put this on <see cref="StoreBase"/>-derived store classes and its partial properties to generate their accessors.
                 /// </summary>
-                [System.AttributeUsage(System.AttributeTargets.Property | System.AttributeTargets.Class)]
-                public sealed class AutoSubscribeAttribute : System.Attribute
-                {
-                }
+                [AttributeUsage(AttributeTargets.Property | AttributeTargets.Class)]
+                internal sealed class AutoSubscribeAttribute : global::System.Attribute;
+
                 """);
         });
 
-        // 2️⃣ Pipeline : classes annotées avec [AutoSubscribe]
         var pipeline = context.SyntaxProvider.ForAttributeWithMetadataName(
             fullyQualifiedMetadataName: "BlazorLayout.StateManagement.AutoSubscribeAttribute",
-            predicate: static (syntaxNode, _) => syntaxNode is ClassDeclarationSyntax,
-            transform: static (context, _) =>
+            predicate: static (syntaxNode, cancellationToken) => syntaxNode is ClassDeclarationSyntax,
+            transform: static (context, cancellationToken) =>
             {
-                var classSyntax = (ClassDeclarationSyntax)context.TargetNode;
-
-                if (context.SemanticModel.GetDeclaredSymbol(classSyntax) is not INamedTypeSymbol classSymbol)
+                var classDeclarationSyntax = (ClassDeclarationSyntax)context.TargetNode;
+                if (context.SemanticModel.GetDeclaredSymbol(classDeclarationSyntax) is not INamedTypeSymbol classSymbol)
                     return null;
 
                 var properties = new List<PropertyModel>();
-
-                foreach (var member in classSyntax.Members)
+                foreach (var member in classDeclarationSyntax.Members)
                 {
-                    if (member is not PropertyDeclarationSyntax propertySyntax)
+                    if (member is not PropertyDeclarationSyntax propertyDeclarationSyntax)
                         continue;
 
-                    if (context.SemanticModel.GetDeclaredSymbol(propertySyntax) is not IPropertySymbol propertySymbol)
+                    if (context.SemanticModel.GetDeclaredSymbol(propertyDeclarationSyntax) is not IPropertySymbol propertySymbol)
                         continue;
 
-                    if (!propertySymbol.GetAttributes().Any(a =>
-                        a.AttributeClass?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)
-                        == "global::BlazorLayout.StateManagement.AutoSubscribeAttribute"))
-                        continue;
+                    var ok = false;
+                    foreach (var attributeData in propertySymbol.GetAttributes())
+                    {
+                        if (attributeData.AttributeClass?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)
+                            == "global::BlazorLayout.StateManagement.AutoSubscribeAttribute")
+                        {
+                            ok = true;
+                            break;
+                        }
+                    }
+
+                    if (!ok) continue;
 
                     if (!propertySymbol.IsPartialDefinition)
                         continue;
 
-                    properties.Add(new PropertyModel(
+                    properties.Add(new(
                         Type: propertySymbol.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
-                        Name: propertySyntax.Identifier.Text,
+                        Name: propertyDeclarationSyntax.Identifier.Text,
                         PropertyAccessors: propertySymbol.DeclaredAccessibility,
                         GetAccessors: propertySymbol.GetMethod?.DeclaredAccessibility ?? Accessibility.NotApplicable,
                         SetAccessors: propertySymbol.SetMethod?.DeclaredAccessibility
@@ -71,53 +77,97 @@ public class StoreAutoSubscribeGenerator : IIncrementalGenerator
                 }
 
                 return new ClassModel(
-                    Namespace: classSymbol.ContainingNamespace.ToDisplayString(),
+                    Namespace: classSymbol.ContainingNamespace!.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat),
                     Name: classSymbol.Name,
                     TypeParams: classSymbol.TypeParameters,
                     Properties: properties
                 );
             }
-        ).Where(m => m is not null);
+        ).Where(model => model is not null);
 
-        // 3️⃣ Génération du code des propriétés
         context.RegisterSourceOutput(pipeline, static (context, model) =>
         {
+            var cleanNamespace = model!.Namespace.StartsWith("global::")
+                ? model.Namespace.Substring("global::".Length)
+                : model.Namespace;
+
             var sb = new StringBuilder();
 
-            sb.AppendLine($"namespace {model!.Namespace};");
-            sb.AppendLine();
-            sb.AppendLine($"public partial class {model.Name}");
-            sb.AppendLine("{");
+            sb.Append($$"""
+                        namespace {{cleanNamespace}};
 
-            foreach (var prop in model.Properties)
+                        public partial class {{model.Name}}
+                        """);
+
+            var typeParamsCount = model.TypeParams.Length;
+            if (typeParamsCount is not 0)
             {
-                sb.AppendLine($"    private {prop.Type} __{prop.Name};");
-                sb.AppendLine();
-                sb.AppendLine($"    public partial {prop.Type} {prop.Name}");
-                sb.AppendLine("    {");
-                sb.AppendLine("        get");
-                sb.AppendLine("        {");
-                sb.AppendLine("            SubscribeCaller();");
-                sb.AppendLine($"            return __{prop.Name};");
-                sb.AppendLine("        }");
-
-                if (prop.SetAccessors is not null)
+                sb.Append("<");
+                for (var i = 0; i < typeParamsCount; i++)
                 {
-                    sb.AppendLine("        private set");
-                    sb.AppendLine("        {");
-                    sb.AppendLine($"            __{prop.Name} = value;");
-                    sb.AppendLine("            NotifySubscribers();");
-                    sb.AppendLine("        }");
+                    if (i is not 0) sb.Append(", ");
+                    sb.Append(model.TypeParams[i].Name);
                 }
 
-                sb.AppendLine("    }");
-                sb.AppendLine();
+                sb.Append(">\n");
             }
 
-            sb.AppendLine("}");
+            sb.Append("""
+                      {
+
+                      """);
+
+            foreach (var property in model.Properties)
+            {
+                var initializer = ReadOnlyCollectionInitializer(property.Type);
+                var propertyAccessors = property.PropertyAccessors.Canonical();
+                var getAccessors = property.PropertyAccessors == property.GetAccessors
+                    ? null
+                    : property.GetAccessors.Canonical();
+                var setAccessors = property.PropertyAccessors == property.SetAccessors
+                    ? null
+                    : property.SetAccessors?.Canonical();
+
+                var hasSetter = property.SetAccessors is not null;
+
+                sb.Append($$"""
+                                private {{property.Type}} __{{property.Name}}{{initializer}};
+                                {{propertyAccessors}}partial {{property.Type}} {{property.Name}}
+                                {
+                                    {{getAccessors}}get
+                                    {
+                                        SubscribeCaller();
+                                        return __{{property.Name}};
+                                    }
+
+                            """);
+
+                if (hasSetter)
+                {
+                    sb.Append($$"""
+                                        {{setAccessors}}set
+                                        {
+                                            __{{property.Name}} = value;
+                                            NotifySubscribers();
+                                        }
+
+                                """);
+                }
+
+                sb.Append("""
+                              }
+
+
+                          """);
+            }
+
+            sb.Append("""
+                      }
+
+                      """);
 
             context.AddSource(
-                $"{model.Namespace}.{model.Name}.g.cs",
+                $"{cleanNamespace}.{model.Name}.g.cs",
                 SourceText.From(sb.ToString(), Encoding.UTF8));
         });
     }
@@ -126,14 +176,44 @@ public class StoreAutoSubscribeGenerator : IIncrementalGenerator
         string Namespace,
         string Name,
         ImmutableArray<ITypeParameterSymbol> TypeParams,
-        IReadOnlyList<PropertyModel> Properties
-    );
+        IReadOnlyList<PropertyModel> Properties);
 
     private record PropertyModel(
         string Type,
         string Name,
         Accessibility PropertyAccessors,
         Accessibility GetAccessors,
-        Accessibility? SetAccessors
-    );
+        Accessibility? SetAccessors);
+
+    private static string? ReadOnlyCollectionInitializer(string fullyQualifiedTypeName)
+    {
+        if (fullyQualifiedTypeName.IndexOf('<') is not -1 and var indexOfTypeParameterList)
+        {
+            if (fullyQualifiedTypeName.StartsWith("global::System.Collections.Generic.IReadOnlyList<"))
+                return " = []";
+
+            if (fullyQualifiedTypeName.StartsWith("global::System.Collections.Generic.IReadOnlyDictionary<"))
+                return $" =\n        new global::System.Collections.Generic.Dictionary{fullyQualifiedTypeName.Substring(indexOfTypeParameterList)}()";
+
+            if (fullyQualifiedTypeName.StartsWith("global::System.Collections.Generic.IReadOnlySet<"))
+                return $" =\n        new global::System.Collections.Generic.HashSet{fullyQualifiedTypeName.Substring(indexOfTypeParameterList)}()";
+        }
+
+        return null;
+    }
+}
+
+internal static class Extensions
+{
+    internal static string Canonical(this Accessibility accessors) => accessors switch
+    {
+        Accessibility.NotApplicable => "",
+        Accessibility.Private => "private ",
+        Accessibility.ProtectedAndInternal => "private protected ",
+        Accessibility.Protected => "protected ",
+        Accessibility.Internal => "internal ",
+        Accessibility.ProtectedOrInternal => "protected internal ",
+        Accessibility.Public => "public ",
+        _ => throw new ArgumentOutOfRangeException(nameof(accessors), accessors, null)
+    };
 }

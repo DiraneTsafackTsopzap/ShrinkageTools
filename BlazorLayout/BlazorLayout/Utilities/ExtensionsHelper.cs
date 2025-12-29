@@ -29,15 +29,15 @@ namespace BlazorLayout.Utilities;
         return Localizer["shrinkage_activity_unknown_status"];
     }
 
-    public static string ToDisplayString(this Status status)
+    public static string ToDisplayString(this StatusDto status)
     {
         return status switch
         {
-            Status.Open or Status.Missing => Localizer["shrinkage_status_open"],
-            Status.Transferred => Localizer["shrinkage_button_transferred"],
-            Status.Rejected => Localizer["shrinkage_button_rejected"],
-            Status.Approved => Localizer["shrinkage_button_approved"],
-            Status.All => Localizer["shrinkage_status_all"],
+            StatusDto.Open or StatusDto.Missing => Localizer["shrinkage_status_open"],
+            StatusDto.Transferred => Localizer["shrinkage_button_transferred"],
+            StatusDto.Rejected => Localizer["shrinkage_button_rejected"],
+            StatusDto.Approved => Localizer["shrinkage_button_approved"],
+            StatusDto.All => Localizer["shrinkage_status_all"],
             _ => throw new InvalidEnumArgumentException(nameof(status)),
         };
     }
@@ -71,6 +71,20 @@ namespace BlazorLayout.Utilities;
             nameof(ActivityTypeDto.Others) => ActivityTypeDto.Others,
             nameof(ActivityTypeDto.ProductiveNotMeasurable) => ActivityTypeDto.ProductiveNotMeasurable,
             _ => throw new InvalidEnumArgumentException(nameof(activityType)),
+        };
+
+        return result;
+    }
+
+
+
+    public static string ConvertToAbsenceTypeString(this AbsenceTypeDto absenceType)
+    {
+        var result = absenceType switch
+        {
+            AbsenceTypeDto.Sickness => Localizer["shrinkage_absence_type_sickness"],
+            AbsenceTypeDto.Vacation => Localizer["shrinkage_absence_type_vacation"],
+            _ => throw new InvalidEnumArgumentException(nameof(absenceType)),
         };
 
         return result;

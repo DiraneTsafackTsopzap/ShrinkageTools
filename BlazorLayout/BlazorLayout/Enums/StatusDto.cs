@@ -1,5 +1,5 @@
 ﻿namespace BlazorLayout.Enums;
-public enum Status
+public enum StatusDto
 {
     Unspecified = 0,
     Open = 1,
