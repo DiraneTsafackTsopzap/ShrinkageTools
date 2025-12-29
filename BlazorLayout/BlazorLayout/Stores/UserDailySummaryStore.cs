@@ -21,6 +21,21 @@ public sealed partial class UserDailySummaryStore : StoreBase
         Summaries = userDailySummaryItems.OrderByDescending(x => x.Date).ToList();
     }
 
+    public void UpdateIdBasedOnDate(Guid id, DateOnly date)
+    {
+        var index = __Summaries.FindIndex(x => x.Date == date) ?? Utils.Unreachable<int>();
+
+        var list = __Summaries.ToArray();
+
+#if DEBUG
+        Utils.Assert(!list[(index + 1)..].Any(x => x.Date == date));
+#endif
+
+        var updatedSummary = list[index];
+        updatedSummary = updatedSummary with { Id = id };
+        list[index] = updatedSummary;
+        Summaries = list;
+    }
     public void Reset()
     {
         Summaries = new List<UserDailySummaryDto>();

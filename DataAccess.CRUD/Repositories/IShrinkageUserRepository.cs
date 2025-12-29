@@ -7,6 +7,8 @@ namespace DataAccess.CRUD.Repositories
 
         Task<ShrinkageUserDataModel?> GetUserByEmail(string email, CancellationToken token);
 
+        Task<bool> DeleteById(Guid id, Guid deletedBy, CancellationToken token);
+        Task<List<ShrinkageActivityDataModel>> GetActivitiesByUserId(Guid userId, DateOnly shrinkageDate, CancellationToken token);
         Task<ShrinkageUserDataModel> Create(ShrinkageUserDataModel user, CancellationToken token);
         Task<int> UpdateActivityById(ShrinkageActivityDataModel activity, CancellationToken token);
         Task<ShrinkageActivityDataModel> CreateActivity(ShrinkageActivityDataModel activity, CancellationToken token);

@@ -541,6 +541,59 @@ VALUES (
             return await connection.ExecuteAsync(sql, dailyValue);
         }
 
+        public async Task<List<ShrinkageActivityDataModel>> GetActivitiesByUserId(Guid userId, DateOnly shrinkageDate, CancellationToken token)
+        {
+            await using var connection = await GetOpenConnectionAsync(token);
+
+            var param = new
+            {
+                Id = userId,
+                ShrinkageDate = shrinkageDate
+            };
+
+            var command = new CommandDefinition(@$"
+        SELECT
+            sua.id                 AS {nameof(ShrinkageActivityDataModel.Id)},
+            sua.user_id           AS {nameof(ShrinkageActivityDataModel.UserId)},
+            sua.team_id           AS {nameof(ShrinkageActivityDataModel.TeamId)},
+            sua.started_at        AS {nameof(ShrinkageActivityDataModel.StartedAt)},
+            sua.stopped_at        AS {nameof(ShrinkageActivityDataModel.StoppedAt)},
+            sua.activity_track_type AS {nameof(ShrinkageActivityDataModel.ActivityTrackType)},
+            sua.activity_type     AS {nameof(ShrinkageActivityDataModel.ActivityType)},
+            sua.created_by        AS {nameof(ShrinkageActivityDataModel.CreatedBy)},
+            sua.created_at        AS {nameof(ShrinkageActivityDataModel.CreatedAt)}
+        FROM shrinkage_user_activities sua
+        WHERE sua.user_id = :Id
+            AND DATE(sua.started_at) = :ShrinkageDate
+            AND sua.deleted_at IS NULL
+    ", param, cancellationToken: token);
+
+            var result = await connection.QueryAsync<ShrinkageActivityDataModel>(command);
+            return result.ToList();
+        }
+
+        public async Task<bool> DeleteById(Guid id, Guid deletedBy, CancellationToken token)
+        {
+            await using var connection = await GetOpenConnectionAsync(token);
+
+            var parameters = new
+            {
+                Id = id,
+                DeletedBy = deletedBy
+            };
+
+            var command = new CommandDefinition(@$"
+        UPDATE shrinkage_user_activities
+        SET 
+            deleted_at = CURRENT_TIMESTAMP,
+            deleted_by = :DeletedBy
+        WHERE id = :Id
+    ", parameters, cancellationToken: token);
+
+            var affectedRows = await connection.ExecuteAsync(command);
+            return affectedRows > 0;
+        }
+
 
     }
 

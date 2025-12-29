@@ -1,0 +1,119 @@
+﻿@using BlazorLayout.Enums
+@using BlazorLayout.ExtensionsJavaScript
+@using BlazorLayout.Shared
+
+
+@{
+    var className = Height switch
+    {
+        ModalHeight.Auto => null,
+        ModalHeight.Medium => "medium-height",
+        ModalHeight.Large => "large-height",
+        ModalHeight.Xl => "xl-height-width",
+        ModalHeight.Xxl => "xxl-height-width",
+        ModalHeight.Full => "full-height",
+        _ => throw new("unreachable"),
+    };
+}
+
+<dialog open @ref="modalRef" class="@className" @onkeydown="HandleKeyDown" @onkeydown:stopPropagation>
+    <fieldset style="display: contents" disabled="@(busy is not 0)">
+        <CascadingValue Value="this" IsFixed>
+            <header>
+                <b>@Title</b>
+                @if (!HideCloseButton)
+                {
+                    <button type="button" tabindex="-1" @onclick="Close">×</button>
+                }
+            </header>
+            <main>
+                @ChildContent
+            </main>
+            @if (Footer is not null)
+            {
+                <footer>
+                    @Footer
+                </footer>
+            }
+        </CascadingValue>
+    </fieldset>
+</dialog>
+
+@code {
+
+    /// <summary>Modal header text.</summary>
+    [Parameter, EditorRequired]
+    public string Title { get; init; } = null!;
+
+    /// <summary>Hides the <c>x</c> close button from the top right corner of the modal.</summary>
+    [Parameter]
+    public bool HideCloseButton { get; init; }
+
+    /// <summary>A callback function to close the modal.</summary>
+    /// <remarks>Called when the user clicks the close button (×), presses the escape key (ESC), or clicks the modal backdrop.</remarks>
+    /// <seealso cref="DisableBackdropClose"/>
+    /// <seealso cref="HideCloseButton"/>
+    [Parameter, EditorRequired]
+    public Action Close { get; init; } = null!;
+
+    /// <remarks>
+    /// By default the <see cref="Close"/> action can be invoked by clicking on the modal backdrop.
+    /// </remarks>
+    [Parameter]
+    public bool DisableBackdropClose { get; init; }
+
+    /// <remarks>Receives auto-focus.</remarks>
+    /// <seealso cref="Footer"/>
+    [Parameter, EditorRequired]
+    public RenderFragment ChildContent { get; init; } = null!;
+
+    /// <summary>Should contain <see cref="FooterButton"/>s.</summary>
+    /// <remarks>Receives auto-focus if <see cref="ChildContent"/> isn't eligible.</remarks>
+    [Parameter]
+    public RenderFragment? Footer { get; init; }
+
+    [Parameter]
+    public ModalHeight Height { get; init; }
+
+    [Inject]
+    private IJSRuntime JsRuntime { get; init; } = null!;
+
+    private ElementReference modalRef;
+    private byte busy;
+
+    public void IncBusy()
+    {
+        checked { busy++; }
+
+        StateHasChanged();
+    }
+
+    public void DecBusy()
+    {
+        checked { busy--; }
+
+        StateHasChanged();
+    }
+
+    public void ForceRedraw() => StateHasChanged();
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        ModalStack.OnModalMounted(this);
+        if (firstRender) JsRuntime.PlaceFocusWithin(modalRef);
+        base.OnAfterRender(firstRender);
+    }
+
+    private void HandleKeyDown(KeyboardEventArgs ev)
+    {
+        if (busy is 0 && ev is { Code: "Escape", Repeat: false, CtrlKey: false, AltKey: false, ShiftKey: false, MetaKey: false })
+            Close();
+    }
+
+    public void HandleBackdropClick()
+    {
+        if (!DisableBackdropClose && busy is 0) Close();
+    }
+
+}
+

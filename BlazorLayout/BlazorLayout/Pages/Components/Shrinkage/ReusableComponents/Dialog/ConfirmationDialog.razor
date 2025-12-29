@@ -1,0 +1,41 @@
+﻿
+@using BlazorLayout.Extensions
+@using BlazorLayout.Pages.Components.Shrinkage.ReusableComponents.Footer
+@using BlazorLayout.Pages.Components.Shrinkage.ReusableComponents.MeinModal
+@using Microsoft.Extensions.Localization
+
+<Modal Title="@Title" Close="CloseModal">
+    <ChildContent>@Message</ChildContent>
+    <Footer>
+        <FooterButton Label="@Localizer["cancel"]" OnClick="@Utils.Async(CloseModal)"/>
+        <FooterButton Label="@ButtonText" OnClick="@HandleConfirmClick" Primary/>
+    </Footer>
+</Modal>
+
+@code {
+
+    [Parameter, EditorRequired]
+    public Action CloseModal { get; init; } = null!;
+
+    [Parameter, EditorRequired]
+    public string Title { get; set; } = null!;
+
+    [Parameter, EditorRequired]
+    public string Message { get; set; } = null!;
+
+    [Parameter, EditorRequired]
+    public string ButtonText { get; set; } = null!;
+
+    [Parameter, EditorRequired]
+    public Func<Task> OnConfirm { get; set; } = null!;
+
+    [Inject]
+    private IStringLocalizer Localizer { get; init; } = null!;
+
+    private async Task HandleConfirmClick()
+    {
+        await OnConfirm();
+        CloseModal();
+    }
+
+}

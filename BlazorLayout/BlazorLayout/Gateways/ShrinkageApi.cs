@@ -4,9 +4,13 @@ using BlazorLayout.Modeles;
 using BlazorLayout.ModelRequest;
 using BlazorLayout.StateManagement;
 using BlazorLayout.Stores;
+using Google.Protobuf.WellKnownTypes;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Json;
+
+
+
 
 namespace BlazorLayout.Gateways
 {
@@ -25,6 +29,9 @@ namespace BlazorLayout.Gateways
 
         // User Daily Summary Dictionary
         private readonly Dictionary<Guid, IdempotentApiRequest> ensureGetUserDailySummary = new();
+
+        // User Shrinkage Dictionary
+        private readonly Dictionary<Guid, Dictionary<DateOnly, IdempotentApiRequest>> ensureGetUserShrinkage = new();
         public ValueTask EnsureGetUserByEmail(string userMail, bool forceRefresh, CancellationToken cancellationToken)
         {
             var request = ensureUserByEmail.GetOrAdd(userMail, () => new IdempotentApiRequest(async token =>
@@ -172,9 +179,75 @@ namespace BlazorLayout.Gateways
         }
 
 
+        // Ensure get User Shrinkage
+        public ValueTask EnsureGetUserShrinkage(DateOnly shrinkageDate, Guid userId, bool forceRefresh, CancellationToken cancellationToken)
+        {
+            IdempotentApiRequest CreateRequest(DateOnly date, Guid uid) => new(async token =>
+            {
+                var correlationId = Guid.NewGuid();
+                using var __ = logger.BeginScope(new Dictionary<string, object>
+                {
+                    ["CorrelationId"] = correlationId,
+                    ["ShrinkageDate"] = date,
+                    ["UserId"] = uid,
+                });
 
+                try
+                {
+                    var response = await HttpClient.PostAsJsonAsync("api/shrinkage/get-user-shrinkage",
+                        new GetUserShrinkageRequest_M
+                        {
+                            CorrelationId = correlationId,
+                            UserId = uid,
+                            ShrinkageDate = date
+                            ,
+                        }, token);
 
+                    response.EnsureSuccessStatusCode();
+                    var shrinkage = await response.Content.ReadFromJsonAsyncNotNull<UserShrinkageDto>(token);
+                    userShrinkageStore.InitializeShrinkage(uid, date, shrinkage);
 
+                    if (shrinkage.UserDailyValues != null)
+                    {
+                        userDailySummaryStore.UpdateIdBasedOnDate(shrinkage.UserDailyValues.Id, date);
+                    }
+                }
+                catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.BadRequest)
+                {
+                    logger.LogError(ex, "Failed to get user shrinkage.");
+                    throw new BadRequestException(ex, correlationId);
+                }
+                catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+                {
+                    logger.LogError(ex, "Failed to get user shrinkage.");
+                    throw new NotFoundException(ex, correlationId);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "Failed to get user shrinkage.");
+                    throw new GetUsersShrinkageException(ex, correlationId);
+                }
+            });
+
+            var perUser = ensureGetUserShrinkage.GetOrAdd(userId, () => new Dictionary<DateOnly, IdempotentApiRequest>());
+            IdempotentApiRequest request;
+
+            if (forceRefresh)
+            {
+                userShrinkageStore.Reset();
+                ensureGetUserShrinkage.Clear();
+
+                perUser = ensureGetUserShrinkage.GetOrAdd(userId, () => new Dictionary<DateOnly, IdempotentApiRequest>());
+                request = CreateRequest(shrinkageDate, userId);
+                perUser[shrinkageDate] = request;
+            }
+            else
+            {
+                request = perUser.GetOrAdd(shrinkageDate, () => CreateRequest(shrinkageDate, userId));
+            }
+
+            return request.Run(cancellationToken);
+        }
 
 
 
@@ -225,6 +298,46 @@ namespace BlazorLayout.Gateways
             {
                 logger.LogError(ex, "Failed to save activity.");
                 throw new SaveActivityException(ex, correlationId);
+            }
+        }
+
+        // Delete Activity By Id
+        public async Task DeleteActivityForUserAsync(Guid id, Guid deletedBy, DateOnly activityDate, CancellationToken cancellationToken)
+        {
+            var correlationId = Guid.NewGuid();
+
+            using var __ = logger.BeginScope(new Dictionary<string, object>
+            {
+                ["CorrelationId"] = correlationId,
+                ["ActivityId"] = id,
+                ["DeletedById"] = deletedBy,
+            });
+            try
+            {
+                var request = new DeleteActivityRequest_M
+                {
+                    CorrelationId = correlationId,
+                    ActivityId = id,
+                    DeletedBy = deletedBy,
+                };
+                var response = await HttpClient.DeleteJsonAsync("api/shrinkage/activities", request, cancellationToken);
+                response.EnsureSuccessStatusCode();
+                userShrinkageStore.DeleteActivityFromUserShrinkage(deletedBy, id, activityDate);
+            }
+            catch (HttpRequestException ex) when (ex is { StatusCode: HttpStatusCode.BadRequest })
+            {
+                logger.LogError(ex, "Failed to delete activity by id.");
+                throw new BadRequestException(ex, correlationId);
+            }
+            catch (HttpRequestException ex) when (ex is { StatusCode: HttpStatusCode.NotFound })
+            {
+                logger.LogError(ex, "Failed to delete activity by id.");
+                throw new NotFoundException(ex, correlationId);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Failed to delete activity by id.");
+                throw new DeleteActivityException(ex, correlationId);
             }
         }
 

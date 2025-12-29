@@ -186,6 +186,9 @@
   <data name="shrinkage_button_approved" xml:space="preserve">
     <value>Approved</value>
   </data>
+  <data name="shrinkage_button_delete" xml:space="preserve">
+    <value>Delete</value>
+  </data>
   <data name="shrinkage_button_refresh" xml:space="preserve">
     <value>Refresh</value>
   </data>
@@ -195,11 +198,23 @@
   <data name="shrinkage_button_transferred" xml:space="preserve">
     <value>Transferred</value>
   </data>
+  <data name="shrinkage_delete_activity_message_DDTS" xml:space="preserve">
+    <value>Should the booked time from: {0:HH:mm} to: {1:HH:mm} (Duration: {2:hh\:mm}) for the activity "{3}" be deleted?</value>
+  </data>
+  <data name="shrinkage_delete_activity_title" xml:space="preserve">
+    <value>Confirm delete activity</value>
+  </data>
   <data name="shrinkage_error_activity_running" xml:space="preserve">
     <value>Please end the current activity</value>
   </data>
+  <data name="shrinkage_error_activity_time_missing" xml:space="preserve">
+    <value>Start or End time is missing</value>
+  </data>
   <data name="shrinkage_error_get_user_email" xml:space="preserve">
     <value>Failed to get User</value>
+  </data>
+  <data name="shrinkage_error_get_user_shrinkage" xml:space="preserve">
+    <value>Failed to get user skrinkage</value>
   </data>
   <data name="shrinkage_error_message_from_should_be_smaller_to" xml:space="preserve">
     <value>The start time must be before the end time.</value>
@@ -255,6 +270,12 @@
   <data name="shrinkage_tooltip_cancel" xml:space="preserve">
     <value>cancel</value>
   </data>
+  <data name="shrinkage_tooltip_delete" xml:space="preserve">
+    <value>delete</value>
+  </data>
+  <data name="shrinkage_tooltip_edit" xml:space="preserve">
+    <value>update</value>
+  </data>
   <data name="shrinkage_tooltip_save" xml:space="preserve">
     <value>save</value>
   </data>
@@ -269,6 +290,9 @@
   </data>
   <data name="shrinkage_warning_future_date" xml:space="preserve">
     <value>No bookings may be made for the future.</value>
+  </data>
+  <data name="shrinkage_warning_paid_time_is_zero_D" xml:space="preserve">
+    <value>You cannot add activities on {0} as Paid Time is 0.</value>
   </data>
   <data name="shrinkage_warning_select_end_time" xml:space="preserve">
     <value>Please select an End time</value>

@@ -3,6 +3,8 @@
 @using BlazorLayout.Gateways
 @using BlazorLayout.Modeles
 @using BlazorLayout.Pages.Components.Shrinkage.ReusableComponents
+@using BlazorLayout.Pages.Components.Shrinkage.ReusableComponents.Dialog
+
 @using BlazorLayout.Pages.Components.Shrinkage.ReusableComponents.Table
 @using BlazorLayout.Shared
 @using BlazorLayout.StateManagement
@@ -73,21 +75,21 @@
                     </td>
                     <td>
                         <div class="d-flex gap-2 justify-content-center">
-                            @* <button @onclick="() =>EditActivity(row)"
-                                    disabled="@(IsReadOnly || isAddingRow || IsTimerActive || isEditing || IsUiLocked)"
+                             <button @onclick="() =>EditActivity(row)"
+                                    disabled="@(isAddingRow  || isEditing )"
                                     type="button"
                                     class="btn btn-sm mr-2"
                                     title="@Localizer["shrinkage_tooltip_edit"]">
                                 <img src="img/edit-icon.svg" class="icon-size" alt="Edit"/>
-                            </button> *@
+                            </button> 
 
-                            @* <button @onclick="() =>ConfirmDeleteActivity(row)"
-                                    disabled="@(IsReadOnly || isAddingRow || IsTimerActive || isEditing || IsUiLocked)"
+                             <button @onclick="() =>ConfirmDeleteActivity(row)"
+                                    disabled="@( isAddingRow  || isEditing )"
                                     type="button"
                                     class="btn btn-sm"
                                     title="@Localizer["shrinkage_tooltip_delete"]">
                                 <img src="img/bin-icon.svg" class="icon-size" alt="Delete"/>
-                            </button> *@
+                            </button> 
                         </div>
                     </td>
                 }
@@ -149,6 +151,10 @@
 
     private const int Timeout = 30_000;
 
+    private string? deleteActivityTitle;
+    private string? deleteActivityMessage;
+    private string? deleteButtonMessage;
+
     public sealed record StateT
     {
         public UserDto? CurrentUser { get; init; }
@@ -199,13 +205,13 @@
             return;
         }
 
-        // var remainingTime = TimeCalculator.GetRemainingTime(UserPaidTime, UserOvertime, UserVacationTime, UserPaidTimeOff, UserActivities);
+        var remainingTime = TimeCalculator.GetRemainingTime(UserPaidTime, UserOvertime, UserVacationTime, UserPaidTimeOff, UserActivities);
 
-        // if (remainingTime == TimeSpan.Zero)
-        // {
-        //     SetWarning(Localizer["shrinkage_warning_zero_remaining_time"]);
-        //     return;
-        // }
+        if (remainingTime == TimeSpan.Zero)
+        {
+            SetWarning(Localizer["shrinkage_warning_zero_remaining_time"]);
+            return;
+        }
 
         isAddingRow = true;
         //OnEditOrAddChanged(true);
@@ -223,6 +229,48 @@
         };
         formContext = new EditContext(formActivityDto);
         
+    }
+
+
+    private void EditActivity(ActivityDto activity)
+    {
+        OnWarning(null);
+        selectedActivity = activity;
+        if (UserActivities.Any(x => x.Id != activity.Id && x.StoppedAt == null))
+        {
+            SetWarning(Localizer["shrinkage_error_activity_running"]);
+            return;
+        }
+
+        isEditing = true;
+        //OnEditOrAddChanged(true);
+        formActivityDto = new ActivityDto
+        {
+            Id = activity.Id,
+            UserId = activity.UserId,
+            StartedAt = activity.StartedAt.ConvertToGermanLocalTime(),
+            StoppedAt = activity.StoppedAt!.Value.ConvertToGermanLocalTime(),
+            TeamId = activity.TeamId,
+            ActivityType = activity.ActivityType,
+            CreatedBy = activity.CreatedBy,
+            UpdatedBy = State.CurrentUser!.Email,
+        };
+        if (activity.StoppedAt == null)
+        {
+            formActivityDto = formActivityDto with
+            {
+                ActivityTrackType = ActivityTrackTypeDto.ManualStopped,
+            };
+        }
+        else
+        {
+            formActivityDto = formActivityDto with
+            {
+                ActivityTrackType = ActivityTrackTypeDto.Manual,
+            };
+        }
+
+        formContext = new EditContext(formActivityDto);
     }
     private void UpdateActivity(ActivityDto activity)
     {
@@ -310,9 +358,63 @@
         StateHasChanged();
     }
 
+    private void ConfirmDeleteActivity(ActivityDto activity)
+    {
+        if (UserActivities.Any(x => x.StoppedAt == null))
+        {
+            SetWarning(Localizer["shrinkage_error_activity_running"]);
+            return;
+        }
+
+        selectedActivity = activity;
+
+        if (activity.StoppedAt == null)
+        {
+            SetWarning(Localizer["shrinkage_error_activity_time_missing"]);
+            return;
+        }
+
+        var startTime = activity.StartedAt;
+        var endTime = activity.StoppedAt.Value;
+        var duration = endTime - startTime;
+
+        deleteActivityTitle = Localizer["shrinkage_delete_activity_title"];
+        deleteActivityMessage = Localizer["shrinkage_delete_activity_message_DDTS", startTime, endTime, duration, activity.ActivityType.ConvertToActivityTypeString()];
+        deleteButtonMessage = Localizer["shrinkage_button_delete"];
+
+
+        ModalStack.PushModal(close => @<ConfirmationDialog CloseModal="close"
+                                                           Title="@deleteActivityTitle"
+                                                           Message="@deleteActivityMessage"
+                                                           ButtonText="@deleteButtonMessage"
+                                                           OnConfirm="@(() => DeleteActivity(activity))"/>
+        );
+    }
+    private async Task DeleteActivity(ActivityDto activity)
+    {
+        selectedActivity = activity;
+
+        try
+        {
+           await ShrinkageApi.DeleteActivityForUserAsync(selectedActivity.Id, State.CurrentUser!.UserId, DateOnly.FromDateTime(selectedActivity.StartedAt.DateTime), TimeoutToken(Timeout));
+            selectedActivity = null;
+          //  await OnAdjustmentsChanged();
+
+            StateHasChanged();
+        }
+        catch (OperationCanceledException) when (IsDisposing) { }
+
+        catch (Exception ex)
+        {
+            string errorMessage = Localizer["shrinkage_error_delete_activity"];
+            if (ex.InnerException is HttpRequestException ex2 && ex2.GetReasonMessage(ex) is { } reason)
+                errorMessage += " " + reason;
+           // SetError(errorMessage);
+        }
+    }
     private async Task HandleSubmit()
     {
-       // await SaveForm();
+       await SaveForm();
     }
 }
 

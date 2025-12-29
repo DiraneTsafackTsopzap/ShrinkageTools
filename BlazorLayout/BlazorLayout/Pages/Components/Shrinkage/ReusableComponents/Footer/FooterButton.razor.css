@@ -1,0 +1,64 @@
+﻿
+footer > div > button {
+    color: #fff;
+    background-color: #343a40;
+    border: 1px solid #343a40;
+    border-radius: 4px;
+    padding: 6px 12px;
+    font-size: 1rem;
+    font-weight: 400;
+    line-height: 1.5;
+    &.primary
+
+{
+    background-color: var(--lowell-orange);
+    border-color: var(--lowell-orange);
+}
+
+}
+
+.btn-orange {
+    background-color: #ff6c37; /* Couleur inspirée de Postman */
+    border-color: #ff6c37;
+    color: white;
+}
+
+:disabled {
+    opacity: .5;
+}
+
+footer > div {
+    display: inline-block;
+    position: relative;
+    &:has(> .primary)
+
+{
+    order: 1;
+    margin-left: auto;
+}
+
+&.waiting::after {
+    /* TODO: inline the svg and apply background-clip:text to make .primary spinners white-orange (if it looks better) */
+    content: "";
+    background: url(img/spinner-loading-dots-svgrepo-com-min.svg) 50% / contain no-repeat;
+    width: 3ex;
+    height: 3ex;
+    pointer-events: none;
+    user-select: none;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    animation: spin-centered 1s linear infinite;
+}
+
+}
+
+@keyframes spin-centered {
+    0% {
+        transform: translate(-50%, -50%) rotateZ(0);
+    }
+
+    to {
+        transform: translate(-50%, -50%) rotateZ(360deg)
+    }
+}

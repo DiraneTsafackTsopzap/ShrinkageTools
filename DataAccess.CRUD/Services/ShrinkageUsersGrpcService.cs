@@ -7,6 +7,7 @@ using DataAccess.CRUD.Repositories.TeamsRepository;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using GrpcShrinkageServiceTraining.Protobuf;
+using Activity = GrpcShrinkageServiceTraining.Protobuf.Activity;
 using Status = GrpcShrinkageServiceTraining.Protobuf.Status;
 
 
@@ -402,6 +403,96 @@ namespace DataAccess.CRUD.Services
 
         private static DateTime AsUtcDateTime(DateOnly date) =>
             date.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
+
+
+        public override async Task<GetUserShrinkageResponse> GetUserShrinkage(GetUserShrinkageRequest request, ServerCallContext context)
+        {
+            if (!request.UserId.TryParseToGuidNotNullOrEmpty(out var userId))
+            {
+                throw RpcExceptions.InvalidArgument($"Error with correlation id {request.CorrelationId} invalid UserId: {userId}");
+            }
+
+            if (request.ShrinkageDate is null)
+            {
+                throw RpcExceptions.InvalidArgument($"Error with correlation id {request.CorrelationId} invalid shrinkage date: {request.ShrinkageDate}");
+            }
+
+            var user = await _shrinkageUsersRepository.GetUserById(userId, context.CancellationToken);
+            if (user is null)
+            {
+                throw RpcExceptions.NotFound($"Error with correlation id {request.CorrelationId} user with Id {request.UserId} not found");
+            }
+
+            var shrinkageDate = request.ShrinkageDate.FromTimeStampToDate();
+            var dailyUserValues = await _shrinkageUsersRepository.GetActiveUserDailyValuesByUserIdAndDate(userId, shrinkageDate, context.CancellationToken);
+
+            var activities = await _shrinkageUsersRepository.GetActivitiesByUserId(userId, shrinkageDate, context.CancellationToken);
+
+            var response = new GetUserShrinkageResponse
+            {
+                Shrinkage = new Shrinkage
+                {
+                    UserDailyValues = new UserDailyValues
+                    {
+                        Id = dailyUserValues.Id,
+                        UserId = userId,
+                        TeamId = dailyUserValues.TeamId,
+                        PaidTime = Duration.FromTimeSpan(TimeSpan.FromMinutes(dailyUserValues.PaidTime)),
+                        PaidTimeOff = Duration.FromTimeSpan(TimeSpan.FromMinutes(dailyUserValues.PaidTimeOff)),
+                        Overtime = Duration.FromTimeSpan(TimeSpan.FromMinutes(dailyUserValues.Overtime)),
+                        VacationTime = Duration.FromTimeSpan(TimeSpan.FromMinutes(dailyUserValues.VacationTime)),
+                        Status = dailyUserValues.Status.ConvertToApiStatus(),
+                        Comment = dailyUserValues.Comment ?? string.Empty,
+                        CreatedOn = NormalizeUtc(dailyUserValues.CreatedAt).ToTimestamp(),
+                        CreatedBy = dailyUserValues.CreatedByUserEmail,
+                        ShrinkageDate = request.ShrinkageDate,
+                    },
+                    Activities =
+                {
+                    activities
+                        .Select(a => new Activity
+                        {
+                            Id = a.Id,
+                            TeamId = a.TeamId,
+                            DateTimeRange = new DateTimeRange { StartedAt = a.StartedAt.ToTimestamp(), StoppedAt = a.StoppedAt?.ToTimestamp() },
+                            ActivityTrackType = a.ActivityTrackType.ConvertToApiActivityTrackType(),
+                            ActivityType = a.ActivityType.ConvertToApiActivityType(),
+                        }).ToList()
+                }
+                }
+            };
+            if (dailyUserValues.Status == ShrinkageConstants.Pending || dailyUserValues.Status == ShrinkageConstants.Transferred)
+            {
+                return response;
+            }
+
+            response.Shrinkage.UserDailyValues.UpdatedBy = dailyUserValues.UpdatedByUserEmail ?? string.Empty;
+            response.Shrinkage.UserDailyValues.UpdatedOn = dailyUserValues.UpdatedAt == null ? null : NormalizeUtc(dailyUserValues.UpdatedAt.Value).ToTimestamp();
+
+            return response;
+        }
+
+        //Delete Activity By Id
+        public override async Task<DeleteActivityByIdResponse> DeleteActivityById(DeleteActivityByIdRequest request, ServerCallContext context)
+        {
+            if (!request.Id.TryParseToGuidNotNullOrEmpty(out var id))
+            {
+                throw RpcExceptions.InvalidArgument($"Error with correlation Id {request.CorrelationId} activity id is required");
+            }
+
+            if (!request.DeletedBy.TryParseToGuidNotNullOrEmpty(out var deletedBy))
+            {
+                throw RpcExceptions.InvalidArgument($"Error with correlation Id {request.CorrelationId} deleted by is required");
+            }
+
+            var activityDeleted = await _shrinkageUsersRepository.DeleteById(id, deletedBy, context.CancellationToken);
+
+            if (!activityDeleted)
+                throw RpcExceptions.NotFound($"Error with correlation Id {request.CorrelationId} activity with id: {request.Id} not found");
+
+            return new DeleteActivityByIdResponse();
+        }
+
     }
 }
 

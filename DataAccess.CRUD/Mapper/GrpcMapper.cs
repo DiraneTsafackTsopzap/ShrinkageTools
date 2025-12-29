@@ -126,6 +126,50 @@ namespace DataAccess.CRUD.Mapper
             return response;
         }
 
+
+        public static UserShrinkageDto MapFromGrpc(GetUserShrinkageResponse grpcResponse)
+        {
+            var udv = grpcResponse.Shrinkage.UserDailyValues;
+
+            return new UserShrinkageDto
+            {
+                PaidTime = udv?.PaidTime?.ToTimeSpan() ?? TimeSpan.Zero,
+                PaidTimeOff = udv?.PaidTimeOff?.ToTimeSpan() ?? TimeSpan.Zero,
+                Overtime = udv?.Overtime?.ToTimeSpan() ?? TimeSpan.Zero,
+                VacationTime = udv?.VacationTime?.ToTimeSpan() ?? TimeSpan.Zero,
+
+                UserDailyValues = udv == null
+                    ? new UserDailyValuesDto()
+                    : new UserDailyValuesDto
+                    {
+                        Id = udv.Id.ToGuid(),
+                        UserId = udv.UserId.ToGuid(),
+                        TeamId = udv.TeamId.ToGuid(),
+                        Status = ShrinkageExtensionsHelper.FromGrpcStatus(udv.Status),
+                        Comment = udv.Comment.NullIfEmpty(),
+                        CreatedAt = udv.CreatedOn.ToDateTime(),
+                        CreatedBy = udv.CreatedBy,
+                        UpdatedAt = udv.UpdatedOn?.ToDateTime(),
+                        UpdatedBy = udv.UpdatedBy.NullIfEmpty(),
+                        ShrinkageDate = DateOnly.FromDateTime(udv.ShrinkageDate.ToDateTime()),
+                    },
+
+                Activities = grpcResponse.Shrinkage.Activities.Select(a => new ActivityDto
+                {
+                    Id = a.Id.ToGuid(),
+                    UserId = udv!.UserId.ToGuid(),
+                    TeamId = a.TeamId.ToGuid(),
+                    StartedAt = a.DateTimeRange?.StartedAt.ToDateTimeOffset() ?? throw new ArgumentNullException(nameof(a.DateTimeRange.StartedAt), "Activity started at cannot be null"),
+                    StoppedAt = a.DateTimeRange?.StoppedAt?.ToDateTimeOffset(),
+                    ActivityTrackType = ShrinkageExtensionsHelper.FromGrpcActivityTrackType(a.ActivityTrackType),
+                    ActivityType = a.ActivityType.FromGrpcActivityType(),
+                    CreatedBy = a.CreatedBy,
+                    UpdatedBy = a.UpdatedBy.NullIfEmpty(),
+                }).ToList(),
+            };
+        }
+
+
     }
 }
 

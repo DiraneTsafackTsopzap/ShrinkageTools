@@ -1,0 +1,72 @@
+﻿@using BlazorLayout.Pages.Components.Shrinkage.ReusableComponents.MeinModal
+<div class="@(waiting ? "waiting" : null)">
+    <button type="button" class="@(Primary ? "btn-warning" : null)" @onclick="HandleClick" disabled="@Disabled">@Label</button>
+</div>
+
+@code {
+
+    [Parameter, EditorRequired]
+    public string Label { get; init; } = null!;
+
+    /// <remarks>
+    /// The modal is smart enough to disable all inputs while <see cref="OnClick"/> has not completed to<br/>
+    /// 1. show the user that an asynchroneous operation is in progress, and<br/>
+    /// 2. avoid race conditions.<br/>
+    /// The <see cref="FooterButton"/> whose <see cref="OnClick"/> is running even renders a spinner.
+    /// </remarks>
+    [Parameter, EditorRequired]
+    public Func<Task> OnClick { get; init; } = null!;
+
+    [Parameter]
+    public bool Primary { get; init; }
+
+    [CascadingParameter]
+    private Modal Modal { get; init; } = null!;
+
+    /// <summary>Set to make the button non-interactive.</summary>
+    /// <seealso cref="OnClick"/>
+    [Parameter]
+    public bool Disabled { get; init; }
+
+    private bool waiting;
+
+    private async Task HandleClick()
+    {
+        switch (OnClick())
+        {
+            case { Status: TaskStatus.Faulted } task:
+                try
+                {
+                    task.GetAwaiter().GetResult();
+                }
+                finally
+                {
+                    Modal.ForceRedraw();
+                }
+
+                break;
+            case { Status: not (TaskStatus.RanToCompletion or TaskStatus.Canceled) } task:
+                waiting = true;
+                Modal.IncBusy();
+                try
+                {
+                    await task;
+                }
+                catch (OperationCanceledException)
+                {
+                    // suppressed
+                }
+                finally
+                {
+                    waiting = false;
+                    Modal.DecBusy();
+                }
+
+                break;
+            default:
+                Modal.ForceRedraw();
+                break;
+        }
+    }
+
+}

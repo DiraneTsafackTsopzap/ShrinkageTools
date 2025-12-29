@@ -2,6 +2,7 @@
 using DataAccess.CRUD.ModeleDto;
 using DataAccess.CRUD.Modeles;
 using DataAccess.CRUD.ModelesRequests;
+using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using GrpcShrinkageServiceTraining.Protobuf;
 using Microsoft.AspNetCore.Mvc;
@@ -218,6 +219,100 @@ namespace ShrinkageGrpcClientApi.Controllers
             }
         }
 
+        // Get user Shrinkage
+        // http://localhost:5000/api/shrinkage/get-user-shrinkage : POST
+        // {
+        //  "correlationId": "8a6f73c2-6f3f-4c92-8c41-4c1b682a1be3",
+        //  "userId": "b4e5c1a9-8f72-4d6b-9a1c-3e7f5d0b2a66",
+        //  "shrinkageDate": "2025-12-29"
+        // }
+
+
+        [HttpPost("get-user-shrinkage")]
+        public async Task<UserShrinkageDto> GetUserShrinkage(GetUserShrinkageRequest_M input, CancellationToken cancellationToken)
+        {
+            using var __ = _logger.BeginScope(new Dictionary<string, object>
+            {
+                ["CorrelationId"] = input.CorrelationId,
+                ["UserId"] = input.UserId,
+                ["ShrinkageDate"] = input.ShrinkageDate,
+            });
+            try
+            {
+                var grpcrequest = new GetUserShrinkageRequest
+                {
+                    CorrelationId =  input.CorrelationId ,
+                    UserId = input.UserId,
+                    ShrinkageDate = input.ShrinkageDate.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc).ToTimestamp()
+                };
+
+                var grpcResponse = await _grpcClient.GetUserShrinkageAsync(grpcrequest, cancellationToken: cancellationToken);
+
+                var dto = GrpcMapper.MapFromGrpc(grpcResponse);
+
+                return dto;
+            }
+            catch (RpcException ex) when (ex.StatusCode == global::Grpc.Core.StatusCode.InvalidArgument)
+            {
+                _logger.LogError(ex, "Failed to get user shrinkage");
+                throw new BadHttpRequestException(ex.Message, StatusCodes.Status400BadRequest);
+            }
+            catch (RpcException ex) when (ex.StatusCode == global::Grpc.Core.StatusCode.NotFound)
+            {
+                _logger.LogError(ex, "Failed to get user shrinkage");
+                throw new BadHttpRequestException(ex.Message, StatusCodes.Status404NotFound);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to get user shrinkage");
+                throw new BadHttpRequestException("Failed to get user shrinkage", StatusCodes.Status500InternalServerError, ex);
+            }
+        }
+
+
+        // Delete Activity
+        // http://localhost:5000/api/shrinkage/activities : DELETE
+        //
+        //        {
+        //  "correlationId": "b9f2190f-d38c-426e-bbaa-512a5ff74f8e",
+        //  "activityId": "d6a9fc9f-3b77-4a92-aacc-9e3a2a6cfa7f",  // Activity id doit exister ds la Base de donnes
+        //  "deletedBy": "b4e5c1a9-8f72-4d6b-9a1c-3e7f5d0b2a66"
+        //}
+
+        [HttpDelete("activities")]
+        public async Task DeleteActivityById([FromBody] DeleteActivityRequest_M input, CancellationToken cancellationToken)
+        {
+            using var __ = _logger.BeginScope(new Dictionary<string, object>
+            {
+                ["@Request"] = input,
+            });
+            try
+            {
+                var request = new DeleteActivityByIdRequest
+                {
+                    CorrelationId = input.CorrelationId,
+                    Id = input.ActivityId,
+                    DeletedBy = input.DeletedBy,
+                };
+
+                await _grpcClient.DeleteActivityByIdAsync(request, cancellationToken: cancellationToken);
+            }
+            catch (RpcException ex) when (ex.StatusCode == global::Grpc.Core.StatusCode.InvalidArgument)
+            {
+                _logger.LogError(ex, "Failed to delete activity by id");
+                throw new BadHttpRequestException(ex.Message, StatusCodes.Status400BadRequest);
+            }
+            catch (RpcException ex) when (ex.StatusCode == global::Grpc.Core.StatusCode.NotFound)
+            {
+                _logger.LogError(ex, "Failed to delete activity by id");
+                throw new BadHttpRequestException(ex.Message, StatusCodes.Status404NotFound);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to delete activity by id");
+                throw new BadHttpRequestException("Failed to delete activity by id", StatusCodes.Status500InternalServerError, ex);
+            }
+        }
     }
 }
 

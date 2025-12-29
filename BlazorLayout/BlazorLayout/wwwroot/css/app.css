@@ -7,6 +7,9 @@
     --cf-dark-color: #212121;
     --cf-light-color: #deeefb;
     --cf-body-font-size: 1.1rem;
+    --lowell-orange: #fe5000;
+    /* half lowell-orange, half white */
+    --lowell-orange-half: color-mix(in oklch, var(--lowell-orange), #fff);
 }
 
 

@@ -8,6 +8,7 @@ namespace BlazorLayout.ExtensionsJavaScript;
     public static void PreventDoubleClickTextSelection(this IJSRuntime js, ElementReference element) =>
        _ = js.InvokeVoidAsync("app.preventDoubleClickTextSelection", element);
 
-
+    public static void PlaceFocusWithin(this IJSRuntime js, ElementReference element) =>
+       _ = js.InvokeVoidAsync("app.placeFocusWithin", element);
 }
 

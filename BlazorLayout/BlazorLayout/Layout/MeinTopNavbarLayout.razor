@@ -1,4 +1,5 @@
 ﻿@using BlazorLayout.Layout.MenuLayout
+@using BlazorLayout.Shared
 @inherits LayoutComponentBase
 
 <div class="d-flex flex-column h-100">
@@ -21,6 +22,10 @@
         <TopNavFooter />
     </footer>
 </div>
+
+
+<ModalStack OnEmptyChange="StateHasChanged" />
+
 
 @code {
 

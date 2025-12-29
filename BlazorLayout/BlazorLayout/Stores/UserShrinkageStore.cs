@@ -46,6 +46,66 @@ public sealed partial class UserShrinkageStore : StoreBase
         };
     }
 
+    public void InitializeShrinkage(Guid userId, DateOnly shrinkageDate, UserShrinkageDto userShrinkage)
+    {
+        if (__UsersShrinkages.Any(x => x.Key == userId))
+        {
+            if (__UsersShrinkages[userId].Values.Any(x => x.UserDailyValues?.ShrinkageDate == shrinkageDate))
+                throw new InvalidOperationException("Shrinkages for this user for this date has be already initialized");
+
+            var updatedUserShrinkage = __UsersShrinkages[userId];
+            UsersShrinkages = new Dictionary<Guid, IReadOnlyDictionary<DateOnly, UserShrinkageDto>>(__UsersShrinkages)
+            {
+                [userId] = new Dictionary<DateOnly, UserShrinkageDto>(updatedUserShrinkage)
+                {
+                    [shrinkageDate] = userShrinkage,
+                },
+            };
+        }
+        else
+        {
+            UsersShrinkages = new Dictionary<Guid, IReadOnlyDictionary<DateOnly, UserShrinkageDto>>(__UsersShrinkages)
+            {
+                [userId] = new Dictionary<DateOnly, UserShrinkageDto>
+                {
+                    [shrinkageDate] = userShrinkage,
+                },
+            };
+        }
+    }
+
+    public void Reset()
+    {
+        UsersShrinkages = new Dictionary<Guid, IReadOnlyDictionary<DateOnly, UserShrinkageDto>>();
+    }
+
+
+    public void DeleteActivityFromUserShrinkage(Guid userId, Guid id, DateOnly activityDate)
+    {
+        if (!__UsersShrinkages.TryGetValue(userId, out var userShrinkages))
+            throw new InvalidOperationException("User shrinkage for this user were not initialized");
+
+        var userShrinkage = userShrinkages[activityDate] ?? throw new InvalidOperationException("User shrinkage for this user for this shrinkage date were not initialized");
+
+        var existingActivityIndex = userShrinkage.Activities.FindIndex(x => x.Id == id) ?? Utils.Unreachable<int>();
+
+        userShrinkage = userShrinkage with
+        {
+            Activities = userShrinkage.Activities.ExceptAt(existingActivityIndex),
+        };
+
+        UsersShrinkages = new Dictionary<Guid, IReadOnlyDictionary<DateOnly, UserShrinkageDto>>(__UsersShrinkages)
+        {
+            [userId] = new Dictionary<DateOnly, UserShrinkageDto>(userShrinkages)
+            {
+                [activityDate] = userShrinkage,
+            },
+        };
+    }
+
+
+
+
 }
 
 

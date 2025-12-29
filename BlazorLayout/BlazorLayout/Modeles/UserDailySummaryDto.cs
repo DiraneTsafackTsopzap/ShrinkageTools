@@ -2,7 +2,7 @@
 
 namespace BlazorLayout.Modeles;
 
-    public class UserDailySummaryDto 
+    public record UserDailySummaryDto 
     {
     public Guid Id { get; init; }
     public DateOnly Date { get; init; }

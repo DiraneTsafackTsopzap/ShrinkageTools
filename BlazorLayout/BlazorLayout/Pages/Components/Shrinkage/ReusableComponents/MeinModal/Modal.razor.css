@@ -1,0 +1,90 @@
+﻿
+dialog {
+    position: absolute;
+    left: round(down, 50%, 1px);
+    top: round(down, 50%, 1px);
+    transform: translate(round(up, -50%, 1px), round(up, -50%, 1px));
+    width: round(min(750px, 100% - 30px), 1px);
+    background: #fefefe;
+    border-radius: 5px;
+    display: flex;
+    flex-flow: column;
+    padding: 10px 15px;
+    /* Undo UA nonsense */
+    margin: unset !important;
+    color: unset !important;
+    border: unset !important;
+    outline: unset !important;
+    &.medium-height
+
+{
+    height: round(min(444px, 100% - 30px), 1px);
+}
+
+&.large-height {
+    height: round(min(777px, 100% - 15px), 1px);
+}
+
+&.full-height {
+    height: round(calc(100% - 30px), 1px);
+}
+
+&.xl-height-width {
+    height: round(min(777px, 100% - 15px), 1px);
+    width: round(calc(67% - 15px), 1px);
+}
+
+&.xxl-height-width {
+    height: round(min(777px, 100% - 15px), 1px);
+    width: round(calc(65% - 30px), 1px);
+}
+
+max-height: round(calc(100% - 30px), 1px);
+}
+
+header, main, footer {
+    padding: 15px;
+    display: flex;
+    gap: 10px;
+}
+
+header, footer {
+    flex: 0;
+    flex-flow: row;
+    align-items: start;
+}
+
+header {
+    border-bottom: 1px solid #dee2e6;
+}
+
+main {
+    flex: 1 1 auto;
+    flex-flow: column;
+    overflow-y: auto;
+}
+
+footer {
+    border-top: 1px solid #dee2e6;
+    padding-bottom: 10px;
+    user-select: none;
+}
+
+header > b {
+    flex: 1;
+    font-size: 1.75rem;
+    font-weight: 500;
+    line-height: 1;
+}
+
+header > button {
+    flex: 0;
+    padding: 15px;
+    margin: -15px -15px -15px 0;
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    font-weight: 700;
+    line-height: 1;
+    color: #888;
+}

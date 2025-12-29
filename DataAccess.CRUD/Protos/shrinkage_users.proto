@@ -12,15 +12,23 @@ service ShrinkageProtoService {
 // 0 - comment s'appelle notre service ? 
   rpc GetUserByEmail (GetUserByEmailRequest) returns (GetUserByEmailResponse);
 
-  // get Teams
+  //1- get Teams
    rpc GetTeams(GetTeamsRequest) returns (GetTeamsResponse) {}
 
-   // Save Activity
+   //2- Save Activity
    rpc SaveActivity(SaveActivityRequest) returns (SaveActivityResponse) {}
 
-   // Get User Daily Summary
-     rpc GetUserDailySummary(GetUserDailySummaryRequest) returns (GetUserDailySummaryResponse) {}
+   //3- Get User Daily Summary
+   rpc GetUserDailySummary(GetUserDailySummaryRequest) returns (GetUserDailySummaryResponse) {}
 
+   //4- Get User Shrinkage
+    rpc GetUserShrinkage(GetUserShrinkageRequest) returns (GetUserShrinkageResponse) {}
+
+   //5- Delete Activity By id
+   // Delete activity of the user by id.
+   rpc DeleteActivityById(DeleteActivityByIdRequest) returns (DeleteActivityByIdResponse) {}
+
+    
 }
 
 message GetUserByEmailRequest {
@@ -202,6 +210,64 @@ message GetUserDailySummaryResponse {
       Status status = 10;
     }
   }
+}
+message GetUserShrinkageRequest {
+
+  AppUuid correlation_id = 1;
+  AppUuid user_id = 2;
+  google.protobuf.Timestamp shrinkage_date = 3;
+}
+
+message GetUserShrinkageResponse {
+
+  Shrinkage shrinkage = 1;
+}
+message Shrinkage {
+
+  UserDailyValues user_daily_values = 1;
+
+  repeated Activity activities = 2;
+}
+message UserDailyValues {
+
+  AppUuid id = 1;
+  
+  AppUuid user_id = 2;
+  
+  AppUuid team_id = 3;
+
+  google.protobuf.Duration overtime = 4;
+
+  google.protobuf.Duration paid_time_off = 5;
+
+  google.protobuf.Duration vacation_time = 6;
+
+  google.protobuf.Duration paid_time = 7;
+
+  Status status = 8;
+
+  google.protobuf.Timestamp created_on = 9;
+
+  string created_by = 10;
+
+  google.protobuf.Timestamp updated_on = 11;
+
+  string updated_by = 12;
+  
+  string comment = 13;
+
+  google.protobuf.Timestamp shrinkage_date = 14;
+}
+
+message DeleteActivityByIdRequest {
+  
+  AppUuid correlation_id = 1;
+  AppUuid id = 2;
+  AppUuid deleted_by = 3;
+
+}
+
+message DeleteActivityByIdResponse {
 }
 
 // 3- Definir les autres Messages necessaires et 

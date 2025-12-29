@@ -11,8 +11,8 @@ public record UserDailySummaryDto
 {
     public Guid Id { get; init; }
     public DateOnly Date { get; init; }
-    public Status Status { get; init; }
-    public AbsenceType AbsenceType { get; init; }
+    public StatusDto Status { get; init; }
+    public AbsenceTypeDto AbsenceType { get; init; }
     public PublicHolidayDto? PublicHoliday { get; init; }
     public WeekendDto? Weekend { get; init; }
 }

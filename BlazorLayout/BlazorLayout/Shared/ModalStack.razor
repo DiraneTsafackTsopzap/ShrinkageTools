@@ -1,0 +1,68 @@
+﻿@using BlazorLayout.Pages.Components.Shrinkage.ReusableComponents.MeinModal
+
+
+@if (!modals.TryPeek(out var modal))
+    return;
+
+<div class="modal-stack">
+    @* FIXME: Clicking the backdrop takes focus from the modal making ESC not work - probably needs a preventDefault in the event capturing phase *@
+    <div class="backdrop" @onclick="HandleBackdropClick" />
+    @modal(PopModal)
+</div>
+
+@code {
+
+    /// <summary>Invoked when the modal stack becomes empty or non-empty.</summary>
+    [Parameter]
+    public Action? OnEmptyChange { get; init; }
+
+    public static bool HasModals => instance is { modals.Count: not 0 };
+
+    private static ModalStack? instance;
+    private readonly Stack<RenderFragment<Action>> modals = [];
+
+    private Action handleBackdropClick = null!;
+    private void HandleBackdropClick() => handleBackdropClick();
+
+    public ModalStack()
+    {
+        if (instance is not null) throw new InvalidOperationException($"Only 1 {nameof(ModalStack)} must exist");
+        Console.WriteLine(">>> MODALSTACK CONSTRUCTED <<<");
+        instance = this;
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing) instance = null;
+        base.Dispose(disposing);
+    }
+
+    /// <summary>Only to be called by <see cref="Modal.OnAfterRender"/>.</summary>
+    public static void OnModalMounted(Modal modal) => instance!.handleBackdropClick = modal.HandleBackdropClick;
+
+    /// <summary>Puts a modal on the modal stack. Only the topmost modal renders at any time.</summary>
+    /// <param name="modal">
+    /// The <see cref="RenderFragment{TValue}"/> of the new modal.
+    /// Its <i>action</i> parameter closes the modal when invoked.
+    /// Should render a <see cref="Modal"/>.
+    /// </param>
+    public static void PushModal(RenderFragment<Action> modal)
+    {
+        if (instance is null) throw new InvalidOperationException($"There's no {nameof(ModalStack)} in the DOM");
+        instance.modals.Push(modal);
+        if (instance is { modals.Count: 1, OnEmptyChange: not null })
+            instance.OnEmptyChange();
+        instance.StateHasChanged();
+    }
+
+    private void PopModal()
+    {
+        _ = modals.Pop();
+        handleBackdropClick = null!;
+        if (modals.Count is 0 && OnEmptyChange is not null)
+            OnEmptyChange();
+        // TODO: restore focus to the element that was focused when the modal was opened (e.g. some edit button or the cancel button in a previous modal that prompts for confirmation)
+        StateHasChanged();
+    }
+
+}

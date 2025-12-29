@@ -1,9 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
+﻿
 using System.ComponentModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using DataAccess.CRUD.EnumsModels;
 using GrpcShrinkageServiceTraining.Protobuf;
 
@@ -20,14 +16,15 @@ public static class ShrinkageExtensionsHelper
           _ => ActivityTrackType.Unspecified
       };
 
-    public static ActivityTrackType FromGrpcActivityTrackType(ActivityTrackTypeDto trackType)
+    // Conversion de ActivityTrackType (gRPC) vers ActivityTrackTypeDto
+    public static ActivityTrackTypeDto FromGrpcActivityTrackType(ActivityTrackType trackType)
     {
         return trackType switch
         {
-            ActivityTrackTypeDto.Manual => ActivityTrackType.Manual,
-            ActivityTrackTypeDto.Timer => ActivityTrackType.Timer,
-            ActivityTrackTypeDto.ManualStopped => ActivityTrackType.ManualStopped,
-            _ => ActivityTrackType.Unspecified,
+            ActivityTrackType.Manual => ActivityTrackTypeDto.Manual,
+            ActivityTrackType.Timer => ActivityTrackTypeDto.Timer,
+            ActivityTrackType.ManualStopped => ActivityTrackTypeDto.ManualStopped,
+            _ => ActivityTrackTypeDto.Unspecified,
         };
     }
 
@@ -43,16 +40,18 @@ public static class ShrinkageExtensionsHelper
         };
     }
 
-    public static Status FromGrpcStatus(Status status)
+
+    // Attention ici :  Conversion de Status (gRPC) vers StatusDto
+    public static StatusDto FromGrpcStatus(Status status)
     {
         return status switch
         {
-            Status.Pending => Status.Pending,
-            Status.Transferred => Status.Transferred,
-            Status.Approved => Status.Approved,
-            Status.Rejected => Status.Rejected,
-            Status.Missing => Status.Missing,
-            _ => Status.Unspecified,
+            Status.Pending => StatusDto.Open,
+            Status.Transferred => StatusDto.Transferred,
+            Status.Approved => StatusDto.Approved,
+            Status.Rejected => StatusDto.Rejected,
+            Status.Missing => StatusDto.Missing,
+            _ => StatusDto.Unspecified,
         };
     }
 
@@ -70,16 +69,16 @@ public static class ShrinkageExtensionsHelper
              _ => ActivityType.Unspecified
          };
 
-    public static ActivityType FromGrpcActivityType(this ActivityType activityType)
+    public static ActivityTypeDto FromGrpcActivityType(this ActivityType activityType)
     {
         return activityType switch
         {
-            ActivityType.Meeting => ActivityType.Meeting,
-            ActivityType.Projects => ActivityType.Projects,
-            ActivityType.BusinessInterruption => ActivityType.BusinessInterruption,
-            ActivityType.Others => ActivityType.Others,
-            ActivityType.TrainingOrCoaching => ActivityType.TrainingOrCoaching,
-            ActivityType.ProductiveNotMeasurable => ActivityType.ProductiveNotMeasurable,
+            ActivityType.Meeting => ActivityTypeDto.Meeting,
+            ActivityType.Projects => ActivityTypeDto.Projects,
+            ActivityType.BusinessInterruption => ActivityTypeDto.BusinessInterruption,
+            ActivityType.Others => ActivityTypeDto.Others,
+            ActivityType.TrainingOrCoaching => ActivityTypeDto.TrainingOrCoaching,
+            ActivityType.ProductiveNotMeasurable => ActivityTypeDto.ProductiveNotMeasurable,
             _ => throw new InvalidEnumArgumentException(nameof(activityType)),
         };
     }
@@ -94,12 +93,12 @@ public static class ShrinkageExtensionsHelper
         };
     }
 
-    public static AbsenceType FromGrpcAbsenceType(this AbsenceType absenceType)
+    public static AbsenceTypeDto FromGrpcAbsenceType(this AbsenceType absenceType)
     {
         return absenceType switch
         {
-            AbsenceType.Vacation => AbsenceType.Vacation,
-            AbsenceType.Sickness => AbsenceType.Sickness,
+            AbsenceType.Vacation => AbsenceTypeDto.Vacation,
+            AbsenceType.Sickness => AbsenceTypeDto.Sickness,
             _ => throw new InvalidEnumArgumentException(nameof(absenceType)),
         };
     }
