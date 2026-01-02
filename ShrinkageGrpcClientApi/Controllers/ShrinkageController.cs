@@ -7,6 +7,7 @@ using Grpc.Core;
 using GrpcShrinkageServiceTraining.Protobuf;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using System;
 
 namespace ShrinkageGrpcClientApi.Controllers
 {
@@ -15,12 +16,12 @@ namespace ShrinkageGrpcClientApi.Controllers
     public class ShrinkageController : ControllerBase
     {
         private readonly ShrinkageProtoService.ShrinkageProtoServiceClient _grpcClient;
-        private readonly ILogger<ShrinkageController> _logger;
+        private readonly ILogger<ShrinkageController> logger;
 
         public ShrinkageController(ILogger<ShrinkageController> logger, ShrinkageProtoService.ShrinkageProtoServiceClient grpcClient)
         {
             _grpcClient = grpcClient;
-            _logger = logger;
+            this.logger = logger;
         }
 
 
@@ -31,7 +32,7 @@ namespace ShrinkageGrpcClientApi.Controllers
         {
 
 
-            using var _ = _logger.BeginScope(new Dictionary<string, object>
+            using var _ = logger.BeginScope(new Dictionary<string, object>
             {
                 ["CorrelationId"] = correlationId,
                 ["Email"] = emailAddress
@@ -58,12 +59,12 @@ namespace ShrinkageGrpcClientApi.Controllers
 
             catch (RpcException ex) when (ex.StatusCode == global::Grpc.Core.StatusCode.InvalidArgument)
             {
-                _logger.LogError(ex, "Failed to get user");
+                logger.LogError(ex, "Failed to get user");
                 throw new BadHttpRequestException($"Failed to get user", StatusCodes.Status400BadRequest);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to get user");
+                logger.LogError(ex, "Failed to get user");
                 throw new BadHttpRequestException("Failed to get user", StatusCodes.Status500InternalServerError, ex);
             }
         }
@@ -74,7 +75,7 @@ namespace ShrinkageGrpcClientApi.Controllers
         [HttpGet("teams")]
         public async Task<IReadOnlyList<TeamDto>> GetTeams([FromQuery] Guid correlationId, CancellationToken cancellationToken)
         {
-            using var __ = _logger.BeginScope(new Dictionary<string, object>
+            using var __ = logger.BeginScope(new Dictionary<string, object>
             {
                 ["CorrelationId"] = correlationId,
             });
@@ -93,7 +94,7 @@ namespace ShrinkageGrpcClientApi.Controllers
 
                 if (teamsResponse == null)
                 {
-                    _logger.LogError("No teams found");
+                    logger.LogError("No teams found");
                     throw new ArgumentNullException(nameof(teamsResponse));
                 }
 
@@ -103,7 +104,7 @@ namespace ShrinkageGrpcClientApi.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to get teams");
+                logger.LogError(ex, "Failed to get teams");
                 throw new BadHttpRequestException(
                     "Failed to get teams",
                     StatusCodes.Status500InternalServerError,
@@ -143,7 +144,7 @@ namespace ShrinkageGrpcClientApi.Controllers
         [HttpPost("save-user-activity")]
         public async Task SaveActivity([FromBody] SaveActivityRequest_M input, CancellationToken cancellationToken)
         {
-            using var __ = _logger.BeginScope(new Dictionary<string, object>
+            using var __ = logger.BeginScope(new Dictionary<string, object>
             {
                 ["@Request"] = input,
             });
@@ -154,17 +155,17 @@ namespace ShrinkageGrpcClientApi.Controllers
             }
             catch (RpcException ex) when (ex.StatusCode == global::Grpc.Core.StatusCode.InvalidArgument)
             {
-                _logger.LogError(ex, "Failed to save activity");
+                logger.LogError(ex, "Failed to save activity");
                 throw new BadHttpRequestException(ex.Message, StatusCodes.Status400BadRequest);
             }
             catch (RpcException ex) when (ex.StatusCode == global::Grpc.Core.StatusCode.NotFound)
             {
-                _logger.LogError(ex, "Failed to save activity");
+                logger.LogError(ex, "Failed to save activity");
                 throw new BadHttpRequestException(ex.Message, StatusCodes.Status404NotFound);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to save activity");
+                logger.LogError(ex, "Failed to save activity");
                 throw new BadHttpRequestException("Failed to save activity", StatusCodes.Status500InternalServerError, ex);
             }
         }
@@ -182,7 +183,7 @@ namespace ShrinkageGrpcClientApi.Controllers
         [HttpPost("get-user-daily-summary")]
         public async Task<IReadOnlyList<UserDailySummaryDto>> GetUserDailySummary([FromBody] GetUserDailySummaryRequest_M input, CancellationToken cancellationToken)
         {
-            using var __ = _logger.BeginScope(new Dictionary<string, object>
+            using var __ = logger.BeginScope(new Dictionary<string, object>
             {
                 ["CorrelationId"] = input.CorrelationId,
                 ["UserId"] = input.UserId,
@@ -204,17 +205,17 @@ namespace ShrinkageGrpcClientApi.Controllers
             }
             catch (RpcException ex) when (ex.StatusCode == global::Grpc.Core.StatusCode.InvalidArgument)
             {
-                _logger.LogError(ex, "Failed to get user daily summary");
+                logger.LogError(ex, "Failed to get user daily summary");
                 throw new BadHttpRequestException(ex.Message, StatusCodes.Status400BadRequest);
             }
             catch (RpcException ex) when (ex.StatusCode == global::Grpc.Core.StatusCode.NotFound)
             {
-                _logger.LogError(ex, "Failed to get user daily summary");
+                logger.LogError(ex, "Failed to get user daily summary");
                 throw new BadHttpRequestException(ex.Message, StatusCodes.Status404NotFound);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to get user daily summary");
+                logger.LogError(ex, "Failed to get user daily summary");
                 throw new BadHttpRequestException("Failed to get user daily summary", StatusCodes.Status500InternalServerError, ex);
             }
         }
@@ -231,7 +232,7 @@ namespace ShrinkageGrpcClientApi.Controllers
         [HttpPost("get-user-shrinkage")]
         public async Task<UserShrinkageDto> GetUserShrinkage(GetUserShrinkageRequest_M input, CancellationToken cancellationToken)
         {
-            using var __ = _logger.BeginScope(new Dictionary<string, object>
+            using var __ = logger.BeginScope(new Dictionary<string, object>
             {
                 ["CorrelationId"] = input.CorrelationId,
                 ["UserId"] = input.UserId,
@@ -254,17 +255,17 @@ namespace ShrinkageGrpcClientApi.Controllers
             }
             catch (RpcException ex) when (ex.StatusCode == global::Grpc.Core.StatusCode.InvalidArgument)
             {
-                _logger.LogError(ex, "Failed to get user shrinkage");
+                logger.LogError(ex, "Failed to get user shrinkage");
                 throw new BadHttpRequestException(ex.Message, StatusCodes.Status400BadRequest);
             }
             catch (RpcException ex) when (ex.StatusCode == global::Grpc.Core.StatusCode.NotFound)
             {
-                _logger.LogError(ex, "Failed to get user shrinkage");
+                logger.LogError(ex, "Failed to get user shrinkage");
                 throw new BadHttpRequestException(ex.Message, StatusCodes.Status404NotFound);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to get user shrinkage");
+                logger.LogError(ex, "Failed to get user shrinkage");
                 throw new BadHttpRequestException("Failed to get user shrinkage", StatusCodes.Status500InternalServerError, ex);
             }
         }
@@ -282,7 +283,7 @@ namespace ShrinkageGrpcClientApi.Controllers
         [HttpDelete("activities")]
         public async Task DeleteActivityById([FromBody] DeleteActivityRequest_M input, CancellationToken cancellationToken)
         {
-            using var __ = _logger.BeginScope(new Dictionary<string, object>
+            using var __ = logger.BeginScope(new Dictionary<string, object>
             {
                 ["@Request"] = input,
             });
@@ -299,20 +300,121 @@ namespace ShrinkageGrpcClientApi.Controllers
             }
             catch (RpcException ex) when (ex.StatusCode == global::Grpc.Core.StatusCode.InvalidArgument)
             {
-                _logger.LogError(ex, "Failed to delete activity by id");
+                logger.LogError(ex, "Failed to delete activity by id");
                 throw new BadHttpRequestException(ex.Message, StatusCodes.Status400BadRequest);
             }
             catch (RpcException ex) when (ex.StatusCode == global::Grpc.Core.StatusCode.NotFound)
             {
-                _logger.LogError(ex, "Failed to delete activity by id");
+                logger.LogError(ex, "Failed to delete activity by id");
                 throw new BadHttpRequestException(ex.Message, StatusCodes.Status404NotFound);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to delete activity by id");
+                logger.LogError(ex, "Failed to delete activity by id");
                 throw new BadHttpRequestException("Failed to delete activity by id", StatusCodes.Status500InternalServerError, ex);
             }
         }
+
+
+        // Save Absence
+        // http://localhost:5000/api/shrinkage/absence : POST
+        //        {
+        //  "correlationId": "e4d1a00f-3f56-44cf-85b9-5f5f4148a301",
+        //  "Absence": {
+        //    "id": "cd50c6eb-1d5a-4f6b-9df4-b4e58e96d234",
+        //    "userId": "b4e5c1a9-8f72-4d6b-9a1c-3e7f5d0b2a66", UserId doit exister dans la base
+        //    "userEmail": "diraneserges@gmail.com",            Email doit exister dans la base
+        //    "teamId": "c1f2b9d4-0c64-4c89-9d7b-8e91fcb6e7b2",  TeamId doit exister dans la base
+        //    "absenceType":1,                                , AbsenceType : 1 = Vacation , 2 = Sickness , 3 = Unspecified
+        //    "startDate": "2026-01-03",
+        //    "endDate": "2026-01-05",
+        //    "createdAt": "2026-01-02T10:00:00Z",
+        //    "createdBy": "diraneserges@gmail.com",
+        //    "updatedAt": null,
+        //    "updatedBy": null                                     // Lors du Save ,UpdatedBy est vide , Lors de Update ,updatedBy est rempli
+        //  }
+        //}
+        [HttpPost("absence")]
+        public async Task SaveAbsence([FromBody] SaveUserAbsenceRequest_M absence, CancellationToken cancellationToken)
+        {
+            using var __ = logger.BeginScope(new Dictionary<string, object>
+            {
+                ["@Request"] = absence,
+            });
+
+            try
+            {
+                var request = GrpcMapper.MapToSaveAbsenceRequest(absence);
+                await _grpcClient.SaveAbsenceAsync(request, cancellationToken: cancellationToken);
+            }
+            catch (RpcException ex) when (ex.StatusCode == global::Grpc.Core.StatusCode.InvalidArgument)
+            {
+                logger.LogError(ex, "Failed to save absence");
+                throw new BadHttpRequestException("Failed to save absence", StatusCodes.Status400BadRequest);
+            }
+            catch (RpcException ex) when (ex.StatusCode == global::Grpc.Core.StatusCode.NotFound)
+            {
+                logger.LogError(ex, "Failed to save absence");
+                throw new BadHttpRequestException("Failed to save absence", StatusCodes.Status404NotFound);
+            }
+            catch (RpcException ex) when (ex.StatusCode == global::Grpc.Core.StatusCode.AlreadyExists)
+            {
+                logger.LogError(ex, "Failed to save absence");
+                throw new BadHttpRequestException("Failed to save absence", StatusCodes.Status409Conflict);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Failed to save absence");
+                throw new BadHttpRequestException("Failed to save absence", StatusCodes.Status500InternalServerError, ex);
+            }
+        }
+
+
+        // Get Absences By User Ids
+        // POST http://localhost:5000/api/shrinkage/absences/by-user-ids
+//        {
+//  "correlationId": "f25332cd-dde2-4e90-a0db-d80a5ef1ea5c",
+//  "userIds": [
+//    "b4e5c1a9-8f72-4d6b-9a1c-3e7f5d0b2a66", UserId Doit Exister Dans la Base
+//   
+//  ]
+//}
+
+
+        [HttpPost("absences/by-user-ids")]
+        public async Task<IReadOnlyList<AbsenceDto>> GetAbsencesByUserIds([FromBody] GetAbsencesByUserIdsRequest_M input, CancellationToken cancellationToken)
+        {
+            using var __ = logger.BeginScope(new Dictionary<string, object>
+            {
+                ["CorrelationId"] = input.CorrelationId,
+                ["UserIds"] = string.Join(", ", input.UserIds),
+            });
+            try
+            {
+                var request = new GetAbsencesByUserIdsRequest
+                {
+                    CorrelationId = input.CorrelationId,
+                    UserIds = { input.UserIds.Select(AppUuid.FromGuid).ToList() },
+                };
+
+                var response = await _grpcClient.GetAbsencesByUserIdsAsync(request, cancellationToken: cancellationToken);
+
+                var dtoList = GrpcMapper.MapToAbsencesDtoList(response);
+
+                return dtoList;
+            }
+            catch (RpcException ex) when (ex.StatusCode == global::Grpc.Core.StatusCode.InvalidArgument)
+            {
+                logger.LogError(ex, "Failed to get absence");
+                throw new BadHttpRequestException("Failed to get absence", StatusCodes.Status400BadRequest);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Failed to get absence");
+                throw new BadHttpRequestException("Failed to get absence", StatusCodes.Status500InternalServerError, ex);
+            }
+        }
+
     }
 }
 

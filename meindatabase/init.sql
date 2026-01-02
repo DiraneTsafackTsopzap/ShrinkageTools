@@ -198,3 +198,32 @@ INSERT INTO shrinkage_user_daily_values (
     'Pending',
     480, 0, 0, 0
 ) ON CONFLICT (id) DO NOTHING;
+
+
+-- ============================
+-- INSERTION TEST : Absence Dirane
+-- ============================
+INSERT INTO shrinkage_user_absences (
+    id,
+    created_at,
+    created_by,
+    user_id,
+    team_id,
+    absence_type,
+    start_date,
+    end_date,
+    updated_at,
+    updated_by
+) VALUES (
+    'cd50c6eb-1d5a-4f6b-9df4-b4e58e96d234',
+    '2026-01-02T10:00:00Z',
+    'b4e5c1a9-8f72-4d6b-9a1c-3e7f5d0b2a66',
+    'b4e5c1a9-8f72-4d6b-9a1c-3e7f5d0b2a66',
+    'c1f2b9d4-0c64-4c89-9d7b-8e91fcb6e7b2',
+    'vacation',
+    '2026-01-03',
+    '2026-01-05',
+    NULL,
+    NULL
+)
+ON CONFLICT (id) DO NOTHING;

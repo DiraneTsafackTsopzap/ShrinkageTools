@@ -83,12 +83,12 @@ public static class ShrinkageExtensionsHelper
         };
     }
 
-    public static AbsenceType ToGrpcAbsenceType(this AbsenceType absenceType)
+    public static AbsenceType ToGrpcAbsenceType(this AbsenceTypeDto absenceType)
     {
         return absenceType switch
         {
-            AbsenceType.Vacation => AbsenceType.Vacation,
-            AbsenceType.Sickness => AbsenceType.Sickness,
+            AbsenceTypeDto.Vacation => AbsenceType.Vacation,
+            AbsenceTypeDto.Sickness => AbsenceType.Sickness,
             _ => throw new InvalidEnumArgumentException(nameof(absenceType)),
         };
     }

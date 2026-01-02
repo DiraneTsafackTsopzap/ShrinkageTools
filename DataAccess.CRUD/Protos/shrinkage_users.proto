@@ -28,6 +28,16 @@ service ShrinkageProtoService {
    // Delete activity of the user by id.
    rpc DeleteActivityById(DeleteActivityByIdRequest) returns (DeleteActivityByIdResponse) {}
 
+   //6- Save Absence
+   rpc SaveAbsence(SaveAbsenceRequest) returns (SaveAbsenceResponse) {}
+
+   
+   // 7- Fetch all absences for users.
+  rpc GetAbsencesByUserIds(GetAbsencesByUserIdsRequest) returns (GetAbsencesByUserIdsResponse) {}
+
+  //8- Delete Absence by id
+    rpc DeleteAbsenceById(DeleteAbsenceByIdRequest) returns (DeleteAbsenceByIdResponse) {}
+
     
 }
 
@@ -268,6 +278,56 @@ message DeleteActivityByIdRequest {
 }
 
 message DeleteActivityByIdResponse {
+}
+message SaveAbsenceRequest {
+
+  AppUuid correlation_id = 1;
+
+  Absence absence = 2;
+}
+message SaveAbsenceResponse {
+}
+
+message Absence {
+
+  AppUuid id = 1;
+
+  AppUuid user_id = 2;
+
+  AppUuid team_id = 3;
+
+  AbsenceType absence_type = 4;
+
+  google.protobuf.Timestamp start_date = 5;
+
+  google.protobuf.Timestamp end_date = 6;
+
+  google.protobuf.Timestamp created_at = 7;
+
+  string created_by = 8;
+
+  google.protobuf.Timestamp updated_at = 9;
+
+  string updated_by = 10;
+}
+message GetAbsencesByUserIdsRequest {
+
+  AppUuid correlation_id = 1;
+  repeated AppUuid user_ids = 2;
+}
+
+message GetAbsencesByUserIdsResponse {
+  
+  repeated Absence absences = 1;
+}
+message DeleteAbsenceByIdRequest {
+ 
+  AppUuid correlation_id = 1;
+  AppUuid id = 2;
+  AppUuid deleted_by = 3;
+}
+
+message DeleteAbsenceByIdResponse {
 }
 
 // 3- Definir les autres Messages necessaires et 

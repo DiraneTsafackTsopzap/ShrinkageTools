@@ -126,7 +126,30 @@ namespace DataAccess.CRUD.Mapper
             return response;
         }
 
+        public static SaveAbsenceRequest MapToSaveAbsenceRequest(SaveUserAbsenceRequest_M request)
+        {
+            var grpcRequest = new SaveAbsenceRequest
+            {
+                CorrelationId = request.CorrelationId,
+                Absence = new Absence
+                {
+                    Id = request.Absence.Id,
+                    UserId = request.Absence.UserId,
+                    TeamId = request.Absence.TeamId,
+                    AbsenceType = request.Absence.AbsenceType.ToGrpcAbsenceType(),
+                    StartDate = Timestamp.FromDateTime(request.Absence.StartDate.ToDateTime(TimeOnly.MinValue).ToUniversalTime()),
+                    EndDate = Timestamp.FromDateTime(request.Absence.EndDate.ToDateTime(TimeOnly.MinValue).ToUniversalTime()),
+                    CreatedBy = request.Absence.CreatedBy,
+                },
+            };
 
+            if (request.Absence.UpdatedBy is not null)
+            {
+                grpcRequest.Absence.UpdatedBy = request.Absence.UpdatedBy;
+            }
+
+            return grpcRequest;
+        }
         public static UserShrinkageDto MapFromGrpc(GetUserShrinkageResponse grpcResponse)
         {
             var udv = grpcResponse.Shrinkage.UserDailyValues;
@@ -169,7 +192,23 @@ namespace DataAccess.CRUD.Mapper
             };
         }
 
-
+        public static IReadOnlyList<AbsenceDto> MapToAbsencesDtoList(GetAbsencesByUserIdsResponse response)
+        {
+            return response.Absences.Select(x => new AbsenceDto
+            {
+                Id = x.Id.ToGuid(),
+                UserId = x.UserId.ToGuid(),
+                TeamId = x.TeamId.ToGuid(),
+                UserEmail = x.CreatedBy,
+                AbsenceType = x.AbsenceType.FromGrpcAbsenceType(),
+                StartDate = DateOnly.FromDateTime(x.StartDate.ToDateTime()),
+                EndDate = DateOnly.FromDateTime(x.EndDate.ToDateTime()),
+                CreatedAt = x.CreatedAt.ToDateTime(),
+                CreatedBy = x.CreatedBy,
+                UpdatedAt = x.UpdatedAt?.ToDateTime(),
+                UpdatedBy = x.UpdatedBy.NullIfEmpty(),
+            }).ToList();
+        }
     }
 }
 
