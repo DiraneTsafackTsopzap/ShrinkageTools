@@ -415,6 +415,53 @@ namespace ShrinkageGrpcClientApi.Controllers
             }
         }
 
+
+        // Delete Absence By Id
+        // http://localhost:5000/api/shrinkage/absences : DELETE
+        //        {
+        //  "correlationId": "e4d1a00f-3f56-44cf-85b9-5f5f4148a301",
+        //  "id": "cd50c6eb-1d5a-4f6b-9df4-b4e58e96d234",           Le Absence Id doit exister dans la base
+        //  "deletedBy": "b4e5c1a9-8f72-4d6b-9a1c-3e7f5d0b2a66"     Le UserId qui supprime doit exister dans la base
+        //}
+
+        [HttpDelete("absences")]
+        public async Task DeleteAbsenceById(DeleteUserAbsenceRequest_M input, CancellationToken cancellationToken)
+        {
+            using var __ = logger.BeginScope(new Dictionary<string, object>
+            {
+                ["@Request"] = input,
+            });
+            try
+            {
+                var request = new DeleteAbsenceByIdRequest
+                {
+                    CorrelationId = input.CorrelationId,
+                    Id = input.Id,
+                    DeletedBy = input.DeletedBy,
+                };
+
+                await _grpcClient.DeleteAbsenceByIdAsync(request, cancellationToken: cancellationToken);
+            }
+            catch (RpcException ex) when (ex.StatusCode == global::Grpc.Core.StatusCode.InvalidArgument)
+            {
+                logger.LogError(ex, "Failed to delete absence");
+                throw new BadHttpRequestException($"Failed to delete absence", StatusCodes.Status400BadRequest);
+            }
+            catch (RpcException ex) when (ex.StatusCode == global::Grpc.Core.StatusCode.NotFound)
+            {
+                logger.LogError(ex, "Failed to delete absence");
+                throw new BadHttpRequestException($"Failed to delete absence", StatusCodes.Status404NotFound);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Failed to delete absence");
+                throw new BadHttpRequestException("Failed to delete absence", StatusCodes.Status500InternalServerError, ex);
+            }
+        }
+
+
+
+
     }
 }
 

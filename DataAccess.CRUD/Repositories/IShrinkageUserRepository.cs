@@ -35,5 +35,16 @@ namespace DataAccess.CRUD.Repositories
 
         Task<int> Create(ShrinkageUserDailyValuesDataModel dailyValue, CancellationToken token);
 
+         Task<int> DeleteById(ShrinkageUserDailyValuesDataModel model, CancellationToken token);
+        
+            Task<List<ShrinkageUserDailyValuesDataModel>> GetUserDailyValuesByUserIdAndDateRange(
+    Guid userId,
+    DateOnly startDate,
+    DateOnly endDate,
+    CancellationToken token);
+
+        Task<int> ReActivateUserDailyValueById(Guid id, CancellationToken token);
+
+
     }
 }

@@ -2,6 +2,7 @@
 using DataAccess.CRUD.DapperContext;
 using DataAccess.CRUD.Extensions;
 using DataAccess.CRUD.Repositories;
+using DataAccess.CRUD.Repositories.AbsencesRepository;
 using DataAccess.CRUD.Repositories.TeamsRepository;
 using DataAccess.CRUD.Services;
 using Npgsql;
@@ -17,6 +18,9 @@ builder.Services.AddScoped<IShrinkageUserRepository, ShrinkageUserRepository>();
 
 // Teams Repository
 builder.Services.AddScoped<IShrinkageTeamsRepository, ShrinkageTeamsRepository>();
+
+// Absences Repository
+builder.Services.AddScoped<IShrinkageAbsenceRepository, ShrinkageAbsenceRepository>();
 builder.Services.AddScoped<DapperDbContext>();
 
 var app = builder.Build();

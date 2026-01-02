@@ -594,6 +594,90 @@ VALUES (
             return affectedRows > 0;
         }
 
+        public async Task<int> DeleteById(ShrinkageUserDailyValuesDataModel model, CancellationToken token)
+        {
+            const string sql = $@"
+UPDATE shrinkage_user_daily_values
+SET
+    deleted_at = @{nameof(ShrinkageUserDailyValuesDataModel.DeletedAt)},
+    deleted_by = @{nameof(ShrinkageUserDailyValuesDataModel.DeletedBy)}
+WHERE id = @{nameof(ShrinkageUserDailyValuesDataModel.Id)};
+";
+
+            await using var connection = await GetOpenConnectionAsync(token);
+
+            return await connection.ExecuteAsync(sql, model);
+        }
+
+
+        public async Task<List<ShrinkageUserDailyValuesDataModel>> GetUserDailyValuesByUserIdAndDateRange(
+    Guid userId,
+    DateOnly startDate,
+    DateOnly endDate,
+    CancellationToken token)
+        {
+            const string sql = $@"
+WITH RankedDailyValues AS (
+    SELECT 
+        udv.id               AS {nameof(ShrinkageUserDailyValuesDataModel.Id)},
+        udv.user_id          AS {nameof(ShrinkageUserDailyValuesDataModel.UserId)},
+        udv.team_id          AS {nameof(ShrinkageUserDailyValuesDataModel.TeamId)},
+        udv.paid_time        AS {nameof(ShrinkageUserDailyValuesDataModel.PaidTime)},
+        udv.paid_time_off    AS {nameof(ShrinkageUserDailyValuesDataModel.PaidTimeOff)},
+        udv.overtime         AS {nameof(ShrinkageUserDailyValuesDataModel.Overtime)},
+        udv.vacation_time    AS {nameof(ShrinkageUserDailyValuesDataModel.VacationTime)},
+        udv.status           AS {nameof(ShrinkageUserDailyValuesDataModel.Status)},
+        udv.comment          AS {nameof(ShrinkageUserDailyValuesDataModel.Comment)},
+        udv.created_at       AS {nameof(ShrinkageUserDailyValuesDataModel.CreatedAt)},
+        udv.created_by       AS {nameof(ShrinkageUserDailyValuesDataModel.CreatedBy)},
+        u1.user_email        AS {nameof(ShrinkageUserDailyValuesDataModel.CreatedByUserEmail)},
+        udv.updated_at       AS {nameof(ShrinkageUserDailyValuesDataModel.UpdatedAt)},
+        udv.updated_by       AS {nameof(ShrinkageUserDailyValuesDataModel.UpdatedBy)},
+        u2.user_email        AS {nameof(ShrinkageUserDailyValuesDataModel.UpdatedByUserEmail)},
+        udv.deleted_at       AS {nameof(ShrinkageUserDailyValuesDataModel.DeletedAt)},
+        udv.shrinkage_date   AS ShrinkageDate,
+        ROW_NUMBER() OVER (
+            PARTITION BY DATE(udv.shrinkage_date)
+            ORDER BY udv.created_at DESC
+        ) AS rn
+    FROM shrinkage_user_daily_values udv
+    LEFT JOIN shrinkage_users u1 ON u1.id = udv.created_by
+    LEFT JOIN shrinkage_users u2 ON u2.id = udv.updated_by
+    WHERE udv.user_id = @UserId
+      AND udv.shrinkage_date >= @StartDate
+      AND udv.shrinkage_date <= @EndDate
+)
+
+SELECT * FROM RankedDailyValues
+WHERE rn = 1;
+";
+
+            var parameters = new { UserId = userId, StartDate = startDate, EndDate = endDate };
+
+            await using var connection = await GetOpenConnectionAsync(token);
+
+            var result = await connection.QueryAsync<ShrinkageUserDailyValuesDataModel>(sql, parameters);
+            return result.ToList();
+        }
+
+        public async Task<int> ReActivateUserDailyValueById(Guid id, CancellationToken token)
+        {
+            const string sql = $@"
+UPDATE shrinkage_user_daily_values
+SET
+    deleted_at = NULL,
+    deleted_by = NULL
+WHERE id = @Id;
+";
+
+            var parameters = new { Id = id };
+
+            await using var connection = await GetOpenConnectionAsync(token);
+
+            return await connection.ExecuteAsync(sql, parameters);
+        }
+
+
 
     }
 

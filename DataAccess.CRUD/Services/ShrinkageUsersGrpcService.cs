@@ -1,8 +1,11 @@
-﻿using System.Diagnostics;
+﻿
+using System.Diagnostics;
 using System.Text;
+using System.Transactions;
 using DataAccess.CRUD.Extensions;
 using DataAccess.CRUD.Modeles;
 using DataAccess.CRUD.Repositories;
+using DataAccess.CRUD.Repositories.AbsencesRepository;
 using DataAccess.CRUD.Repositories.TeamsRepository;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
@@ -17,11 +20,14 @@ namespace DataAccess.CRUD.Services
     {
         private readonly IShrinkageUserRepository _shrinkageUsersRepository;
         private readonly IShrinkageTeamsRepository _shrinkageTeamsRepository;
-
-        public ShrinkageUsersGrpcService(IShrinkageTeamsRepository shrinkageTeamsRepository, IShrinkageUserRepository shrinkageUsersRepository)
+        private readonly IShrinkageAbsenceRepository _shrinkageAbsenceRepository;
+        public ShrinkageUsersGrpcService(IShrinkageTeamsRepository shrinkageTeamsRepository, 
+                                         IShrinkageUserRepository shrinkageUsersRepository ,
+                                         IShrinkageAbsenceRepository shrinkageAbsenceRepository)
         {
             _shrinkageUsersRepository = shrinkageUsersRepository;
             _shrinkageTeamsRepository = shrinkageTeamsRepository;
+            _shrinkageAbsenceRepository = shrinkageAbsenceRepository;
         }
 
 
@@ -493,6 +499,246 @@ namespace DataAccess.CRUD.Services
             return new DeleteActivityByIdResponse();
         }
 
+
+        // Save Absence
+        public override async Task<SaveAbsenceResponse> SaveAbsence(SaveAbsenceRequest request, ServerCallContext context)
+        {
+            if (request.Absence is null || !request.Absence.Id.TryParseToGuidNotNullOrEmpty(out var absenceId))
+            {
+                throw RpcExceptions.InvalidArgument($"Error with correlation Id {request.CorrelationId} absence and absence id are required");
+            }
+
+            if (request.Absence.AbsenceType == AbsenceType.Unspecified)
+            {
+                throw RpcExceptions.InvalidArgument($"Error with correlation Id {request.CorrelationId} absence type is not specified");
+            }
+
+            if (!request.Absence.UserId.TryParseToGuidNotNullOrEmpty(out var userId))
+            {
+                throw RpcExceptions.InvalidArgument($"Error with correlation Id {request.CorrelationId} userId is required");
+            }
+
+            if (!request.Absence.TeamId.TryParseToGuidNotNullOrEmpty(out var teamId))
+            {
+                throw RpcExceptions.InvalidArgument($"Error with correlation Id {request.CorrelationId} teamId is required");
+            }
+
+            if (request.Absence.StartDate is null || request.Absence.EndDate is null)
+            {
+                throw RpcExceptions.InvalidArgument($"Error with correlation Id {request.CorrelationId} absence started at and stopped at are required");
+            }
+
+            if (request.Absence.StartDate > request.Absence.EndDate)
+            {
+                throw RpcExceptions.InvalidArgument($"Error with correlation Id {request.CorrelationId} absence started at cannot be greater than stopped at");
+            }
+
+            var cancellationToken = context.CancellationToken;
+            var absence = request.Absence;
+
+            var startedAt = absence.StartDate.FromTimeStampToDate();
+            var stoppedAt = absence.EndDate.FromTimeStampToDate();
+            var absenceDataModel = new ShrinkageAbsenceDataModel
+            {
+                Id = absenceId,
+                UserId = userId,
+                TeamId = teamId,
+                AbsenceType = absence.AbsenceType.ConvertFromApiAbsenceType(),
+                StartDate = startedAt,
+                EndDate = stoppedAt,
+            };
+            var publicHolidays = await _shrinkageUsersRepository.GetTeamsPublicHolidaysByTeamId(teamId, cancellationToken);
+            var publicHolidayDates = publicHolidays.Select(x => x.AffectedDay).ToList();
+
+            var existingAbsence = await _shrinkageAbsenceRepository.GetAbsenceById(absenceId, cancellationToken);
+            var absenceExistForDateRange = await _shrinkageAbsenceRepository.GetAllAbsenceWithinDateRange(userId, startedAt, stoppedAt, cancellationToken);
+
+            if (existingAbsence == null)
+            {
+                if (absenceExistForDateRange.Count != 0)
+                {
+                    throw RpcExceptions.AlreadyExists($"Error with correlation Id {request.CorrelationId} absence with requested date range {startedAt} - {stoppedAt} already exist for user {userId}");
+                }
+
+                var createdBy = absence.CreatedBy;
+                var createdByUserId = await _shrinkageUsersRepository.GetUserIdByEmail(createdBy, cancellationToken);
+                if (createdByUserId == Guid.Empty)
+                    throw RpcExceptions.NotFound($"Error with correlation id {request.CorrelationId} user with email {createdBy} does not exist");
+                absenceDataModel.CreatedBy = createdByUserId;
+                absenceDataModel.CreatedAt = DateTime.UtcNow;
+
+                using var scope = new TransactionScope(TransactionScopeOption.Required, new TransactionOptions { IsolationLevel = IsolationLevel.ReadCommitted, Timeout = TimeSpan.FromSeconds(100) }, TransactionScopeAsyncFlowOption.Enabled);
+
+                await _shrinkageAbsenceRepository.CreateAbsence(absenceDataModel, cancellationToken);
+                for (var date = startedAt; date <= stoppedAt; date = date.AddDays(1))
+                {
+                    var existingUserDailyValue = await _shrinkageUsersRepository.GetActiveUserDailyValuesByUserIdAndDate(userId, date, cancellationToken);
+                    if (existingUserDailyValue != null)
+                    {
+                        await _shrinkageUsersRepository.DeleteById(new ShrinkageUserDailyValuesDataModel { Id = existingUserDailyValue.Id, DeletedAt = DateTime.UtcNow, DeletedBy = createdByUserId, }, context.CancellationToken);
+                    }
+                }
+
+                scope.Complete();
+            }
+            else
+            {
+                if (absenceExistForDateRange.Any(x => x.Id != absenceId))
+                {
+                    throw RpcExceptions.AlreadyExists($"Error with correlation Id {request.CorrelationId} absence with requested date range {startedAt} - {stoppedAt} already exist for user {userId}");
+                }
+
+                if (string.IsNullOrWhiteSpace(absence.UpdatedBy))
+                    throw RpcExceptions.InvalidArgument($"Error with correlation Id {request.CorrelationId} while SaveAbsence for UserId {absence.UserId}, updated by is required");
+
+                var updatedBy = absence.UpdatedBy;
+                var updatedByUserId = await _shrinkageUsersRepository.GetUserIdByEmail(updatedBy, cancellationToken);
+                if (updatedByUserId == Guid.Empty)
+                    throw RpcExceptions.NotFound($"Error with correlation id {request.CorrelationId} user with email {updatedBy} does not exist");
+                absenceDataModel.UpdatedBy = updatedByUserId;
+                absenceDataModel.UpdatedAt = DateTime.UtcNow;
+
+                using var scope = new TransactionScope(TransactionScopeOption.Required, new TransactionOptions { IsolationLevel = IsolationLevel.ReadCommitted, Timeout = TimeSpan.FromSeconds(100) }, TransactionScopeAsyncFlowOption.Enabled);
+
+                await _shrinkageAbsenceRepository.UpdateAbsence(absenceDataModel, cancellationToken);
+
+                //Updating daily values for the existing absence
+                var userDailyValuesListForNewAbsenceDates = await _shrinkageUsersRepository.GetUserDailyValuesByUserIdAndDateRange(userId, startedAt, stoppedAt, cancellationToken);
+                var userDailyValuesListForOldAbsenceDates = await _shrinkageUsersRepository.GetUserDailyValuesByUserIdAndDateRange(userId, existingAbsence.StartDate, existingAbsence.EndDate, cancellationToken);
+
+                Dictionary<DateOnly, ShrinkageUserDailyValuesDataModel> userDailyValuesForNewAbsenceDays = userDailyValuesListForNewAbsenceDates.ToDictionary(x => x.ShrinkageDate, x => x);
+                Dictionary<DateOnly, ShrinkageUserDailyValuesDataModel> userDailyValuesForOldAbsenceDays = userDailyValuesListForOldAbsenceDates.ToDictionary(x => x.ShrinkageDate, x => x);
+
+                //Dates in old but not in new — reopen
+                var datesToBeReopened = userDailyValuesForOldAbsenceDays.Keys.Except(userDailyValuesForNewAbsenceDays.Keys);
+                foreach (var date in datesToBeReopened)
+                {
+                    if (publicHolidayDates.Contains(date) || date.DayOfWeek == DayOfWeek.Saturday || date.DayOfWeek == DayOfWeek.Sunday)
+                        continue;
+
+                    var dailyValueToReopen = userDailyValuesForOldAbsenceDays[date];
+                    await _shrinkageUsersRepository.ReActivateUserDailyValueById(dailyValueToReopen.Id, cancellationToken);
+                }
+
+                //Dates in new but not in old — delete
+                var datesToDelete = userDailyValuesForNewAbsenceDays.Keys.Except(userDailyValuesForOldAbsenceDays.Keys);
+                foreach (var date in datesToDelete)
+                {
+                    var valueToDelete = userDailyValuesForNewAbsenceDays[date];
+                    await _shrinkageUsersRepository.DeleteById(new ShrinkageUserDailyValuesDataModel { Id = valueToDelete.Id, DeletedAt = DateTime.UtcNow, DeletedBy = updatedByUserId }, cancellationToken);
+                }
+
+                scope.Complete();
+            }
+
+            return new SaveAbsenceResponse();
+        }
+
+        // Get Absences By User Ids
+        public override async Task<GetAbsencesByUserIdsResponse> GetAbsencesByUserIds(GetAbsencesByUserIdsRequest request, ServerCallContext context)
+        {
+            if (!request.UserIds.Any())
+            {
+                throw RpcExceptions.InvalidArgument($"Error with correlation id {request.CorrelationId} user ids are required");
+            }
+
+            var dbResponse = await _shrinkageAbsenceRepository.GetAbsenceByUserIds(request.UserIds.Select(x => x.ToGuid()).ToList(), context.CancellationToken);
+            var response = new GetAbsencesByUserIdsResponse
+            {
+                Absences =
+            {
+                dbResponse.Select(x => new Absence
+                {
+                    Id = x.Id,
+                    UserId = x.UserId,
+                    TeamId = x.TeamId,
+                    StartDate = NormalizeUtc(x.StartDate.ToDateTime(TimeOnly.MinValue)).ToTimestamp(),
+                    EndDate = NormalizeUtc(x.EndDate.ToDateTime(TimeOnly.MinValue)).ToTimestamp(),
+                    CreatedAt = NormalizeUtc(x.CreatedAt).ToTimestamp(),
+                    CreatedBy = x.CreatedByUserEmail ?? string.Empty,
+                    UpdatedAt = x.UpdatedAt == null ? null : NormalizeUtc(x.UpdatedAt.Value).ToTimestamp(),
+                    UpdatedBy = x.UpdatedByUserEmail ?? string.Empty,
+                    AbsenceType = x.AbsenceType.ConvertToApiAbsenceType(),
+                })
+            }
+            };
+            return response;
+        }
+
+        // Delete Absences By Id
+        public override async Task<DeleteAbsenceByIdResponse> DeleteAbsenceById(DeleteAbsenceByIdRequest request, ServerCallContext context)
+        {
+            if (!request.Id.TryParseToGuidNotNullOrEmpty(out var id))
+            {
+                throw RpcExceptions.InvalidArgument($"Error with correlation Id {request.CorrelationId} absence id is required");
+            }
+
+            if (!request.DeletedBy.TryParseToGuidNotNullOrEmpty(out var deletedBy))
+            {
+                throw RpcExceptions.InvalidArgument($"Error with correlation Id {request.CorrelationId} deleted by is required");
+            }
+
+            var cancellationToken = context.CancellationToken;
+            var deletedAbsence = await _shrinkageAbsenceRepository.GetAbsenceById(id, cancellationToken);
+            if (deletedAbsence == null)
+            {
+                throw RpcExceptions.NotFound($"Error with correlation Id {request.CorrelationId} absence with id: {id} not found");
+            }
+
+            var user = await _shrinkageUsersRepository.GetUserById(deletedAbsence.UserId, cancellationToken);
+
+            if (user == null)
+            {
+                throw RpcExceptions.NotFound($"Error with correlation Id {request.CorrelationId} absence for user with id : {deletedAbsence.UserId} not found");
+            }
+
+            var publicHolidays = await _shrinkageUsersRepository.GetTeamsPublicHolidaysByTeamId(user.TeamId.Value, cancellationToken);
+            var publicHolidayDates = new List<DateOnly>();
+            if (publicHolidays.Count > 0)
+                publicHolidayDates = publicHolidays.Select(x => x.AffectedDay).ToList();
+
+            using var scope = new TransactionScope(TransactionScopeOption.Required, new TransactionOptions { IsolationLevel = IsolationLevel.ReadCommitted, Timeout = TimeSpan.FromSeconds(100) }, TransactionScopeAsyncFlowOption.Enabled);
+            var absenceDeleted = await _shrinkageAbsenceRepository.DeleteAbsenceById(id, deletedBy, context.CancellationToken);
+
+            for (var date = deletedAbsence!.StartDate; date <= deletedAbsence.EndDate; date = date.AddDays(+1))
+            {
+                if (publicHolidayDates.Count != 0 && publicHolidayDates.Contains(date))
+                {
+                    continue;
+                }
+
+                if (date > DateOnly.FromDateTime(DateTime.UtcNow))
+                {
+                    continue;
+                }
+
+                if (date.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday)
+                {
+                    continue;
+                }
+
+                var paidTime = await _shrinkageUsersRepository.GetPaidTimeByUserIdAndDate(deletedAbsence.UserId, date, cancellationToken);
+
+                await _shrinkageUsersRepository.Create(new ShrinkageUserDailyValuesDataModel
+                {
+                    Id = Guid.NewGuid(),
+                    UserId = user.Id,
+                    TeamId = user.TeamId.Value,
+                    PaidTime = paidTime,
+                    Status = ShrinkageConstants.Pending,
+                    ShrinkageDate = date,
+                    CreatedAt = DateTime.UtcNow,
+                    CreatedBy = deletedBy,
+                }, context.CancellationToken);
+            }
+
+            scope.Complete();
+
+            if (!absenceDeleted)
+                throw RpcExceptions.NotFound($"Error with correlation Id {request.CorrelationId} absence with id: {request.Id} not found");
+
+            return new DeleteAbsenceByIdResponse();
+        }
     }
 }
 
