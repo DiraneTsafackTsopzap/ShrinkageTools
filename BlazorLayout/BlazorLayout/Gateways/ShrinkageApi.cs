@@ -19,6 +19,7 @@ namespace BlazorLayout.Gateways
                                UserShrinkageStore userShrinkageStore,
                                UserByEmailStore userByEmailStore,
                                 UserDailySummaryStore userDailySummaryStore,
+                                UserAbsencesStore userAbsencesStore,
                                ILogger<ShrinkageApi> logger)
     {
         private HttpClient HttpClient => httpClientFactory.CreateClient(HttpClients.ApiGateway);
@@ -32,6 +33,9 @@ namespace BlazorLayout.Gateways
 
         // User Shrinkage Dictionary
         private readonly Dictionary<Guid, Dictionary<DateOnly, IdempotentApiRequest>> ensureGetUserShrinkage = new();
+
+        // User Absences Dictionary
+        private readonly Dictionary<IReadOnlyList<Guid>, IdempotentApiRequest> ensureGetUserAbsences = new();
         public ValueTask EnsureGetUserByEmail(string userMail, bool forceRefresh, CancellationToken cancellationToken)
         {
             var request = ensureUserByEmail.GetOrAdd(userMail, () => new IdempotentApiRequest(async token =>
@@ -339,6 +343,54 @@ namespace BlazorLayout.Gateways
                 logger.LogError(ex, "Failed to delete activity by id.");
                 throw new DeleteActivityException(ex, correlationId);
             }
+        }
+
+        public ValueTask EnsureGetAbsencesByUser(IReadOnlyList<Guid> userIds, bool forceRefresh, CancellationToken cancellationToken)
+        {
+            var request = ensureGetUserAbsences.GetOrAdd(userIds, () => new IdempotentApiRequest(async token =>
+            {
+                var correlationId = Guid.NewGuid();
+                using var __ = logger.BeginScope(new Dictionary<string, object>
+                {
+                    ["CorrelationId"] = correlationId,
+                    ["UserIds"] = string.Join(", ", userIds),
+                });
+
+                try
+                {
+                    var absences = await HttpClient.PostAsJsonAsync("api/shrinkage/absences/by-user-ids",
+                        new GetAbsencesByUserIdsRequest_M
+                        {
+                            CorrelationId = correlationId,
+                            UserIds = userIds,
+                        }, token);
+                    absences.EnsureSuccessStatusCode();
+                    var response = await absences.Content.ReadFromJsonAsyncNotNull<IReadOnlyList<AbsenceDto>>(token);
+
+                    foreach (var userId in userIds)
+                    {
+                        userAbsencesStore.InitializeUserAbsences(userId, response.Where(x => x.UserId == userId).OrderByDescending(a => a.StartDate).ToList());
+                    }
+                }
+                catch (HttpRequestException ex) when (ex is { StatusCode: HttpStatusCode.BadRequest })
+                {
+                    logger.LogError(ex, "Failed to get absences by userId.");
+                    throw new BadRequestException(ex, correlationId);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "Failed to get absences by userId.");
+                    throw new GetAbsencesByUserIdsException(ex, correlationId);
+                }
+            }));
+
+            if (forceRefresh)
+            {
+                request.Reset();
+                userAbsencesStore.Reset();
+            }
+
+            return request.Run(cancellationToken);
         }
 
     }

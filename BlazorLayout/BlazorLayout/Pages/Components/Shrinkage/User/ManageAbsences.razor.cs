@@ -38,6 +38,7 @@ namespace BlazorLayout.Pages.Components.Shrinkage.User
         private EditContext formContext = new(new AbsenceDto());
         private SystemDateOnly newStartDate = tomorrow;
         private SystemDateOnly newEndDate = tomorrow;
+        private const int Timeout = 30_000;
         private string GetRowCreatedBy(string? createdBy) => string.IsNullOrWhiteSpace(createdBy) ? "-" : createdBy;
 
         private IReadOnlyList<AbsenceDto> GetAbsences =>
@@ -57,20 +58,58 @@ namespace BlazorLayout.Pages.Components.Shrinkage.User
         protected override StateT BuildState() => new()
         {
             User = UserByEmailStore.User!,
-            //UsersAbsences = UserAbsencesStore.Absences,
+            UsersAbsences = UserAbsencesStore.Absences,
         };
 
 
         protected override async Task OnInitializedAsync()
         {
-            AdditionalTimeValidator.Localizer ??= Localizer;
+           
             await base.OnInitializedAsync();
-            
+
+            await LoadUserAbsencesAsync(false);
+
         }
 
         private async Task Refresh()
         {
-           // await LoadUserAbsencesAsync(true);
+            await LoadUserAbsencesAsync(true);
+        }
+
+        private async Task LoadUserAbsencesAsync(bool forceRefresh)
+        {
+            try
+            {
+                errorMessage = null;
+                isLoading = true;
+
+                await ShrinkageApi.EnsureGetAbsencesByUser([State.User.UserId], forceRefresh, TimeoutToken(Timeout));
+
+                userAbsence = State.UsersAbsences.TryGetValue(State.User.UserId, out var absence) ? absence : [];
+
+                // reset add/edit state
+                showAddRow = false;
+                addOrEditAbsence = null;
+                formContext = new EditContext(new AbsenceDto());
+            }
+            catch (Exception ex) when (ex is BadRequestException or NotFoundException or GetAbsencesByUserIdsException)
+            {
+                errorMessage = Localizer["shrinkage_error_get_absences_user_ids"];
+                if (ex.InnerException is HttpRequestException ex2 && ex2.GetReasonMessage(ex) is { } reason)
+                    errorMessage += " " + reason;
+            }
+            catch (OperationCanceledException) when (IsDisposing) { }
+            catch (Exception ex)
+            {
+                errorMessage = Localizer["shrinkage_error_unexpected"];
+                if (ex.InnerException is HttpRequestException ex2 && ex2.GetReasonMessage(ex) is { } reason)
+                    errorMessage += " " + reason;
+            }
+            finally
+            {
+                isLoading = false;
+                StateHasChanged();
+            }
         }
         private void StartEdit(AbsenceDto row)
         {

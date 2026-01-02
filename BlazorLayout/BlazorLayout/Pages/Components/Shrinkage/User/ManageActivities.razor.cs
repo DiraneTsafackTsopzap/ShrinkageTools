@@ -4,6 +4,7 @@ using BlazorLayout.Gateways;
 using BlazorLayout.Modeles;
 using BlazorLayout.Shared;
 using BlazorLayout.Stores;
+using BlazorLayout.Utilities;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Localization;
 using System.Xml.Linq;
@@ -81,6 +82,7 @@ namespace BlazorLayout.Pages.Components.Shrinkage.User
             await base.OnInitializedAsync();
 
             await GetUserDailySummary(false);
+            ExtensionsHelper.Localizer = Localizer;
 
             SelectedDailySummaryRow = State.Summaries.FirstOrDefault(x => x.Date == ShrinkageDate);
 
