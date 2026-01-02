@@ -10,7 +10,7 @@ namespace BlazorLayout.Validators
     public static class ActivityValidator
     {
 
-        public static IStringLocalizer Localizer { private get; set; } = null!;
+        public static IStringLocalizer Localizer {  get; set; } = null!;
 
         private static readonly DateOnly today = DateOnly.FromDateTime(DateTime.Today);
         private static readonly TimeZoneInfo germanTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Europe/Berlin");
