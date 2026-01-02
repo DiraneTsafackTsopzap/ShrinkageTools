@@ -1,51 +1,144 @@
-﻿<div class="card shadow-sm border-0">
-    <div class="card-header bg-white border-0 d-flex align-items-center justify-content-between">
-        <div class="d-flex align-items-center gap-2">
-            <span class="badge rounded-pill text-bg-primary">Activities</span>
-            <h5 class="mb-0">Manage Absences</h5>
+﻿@using BlazorLayout.Pages.Components.Shared
+@using BlazorLayout.Pages.Components.Shrinkage.ReusableComponents
+@using BlazorLayout.Pages.Components.Shrinkage.ReusableComponents.Table
+@using BlazorLayout.Utilities
+
+
+
+@inherits StatefulComponent<ManageAbsences.StateT>
+
+@if (errorMessage is not null)
+{
+    <div class="alert alert-danger mt-2">@errorMessage</div>
+}
+else if (warningMessage is not null)
+{
+    <div class="alert alert-warning mt-2">@warningMessage</div>
+}
+
+@if (isLoading)
+{
+    <Loader ShowLoading="isLoading" Message="@Localizer["shrinkage_loader_message"]"/>
+}
+
+<div class="container-fluid px-2">
+    <div class="row g-3 align-items-stretch">
+        <div class="d-flex w-100">
+            <div class="card shadow-sm rounded-1 w-100 bg-light min-h-500">
+                <div class="card-body">
+                    <div class="d-flex justify-content-end align-items-center mb-3">
+                        <div class="d-flex align-items-center">
+                            <button type="button" class="btn"
+                                    disabled="@(showAddRow || addOrEditAbsence is not null)"
+                                    title=@Localizer["shrinkage_tooltip_refresh"]
+                                    @onclick="Refresh">
+                                <img src="img/refresh.svg"
+                                     style="width:25px ; height:25px"
+                                     alt=@Localizer["shrinkage_button_refresh"]>
+                            </button>
+
+                            <AddButton OnClick="@AddAbsence"
+                                       Disabled="@(showAddRow || addOrEditAbsence is not null)"/>
+                        </div>
+                    </div>
+                    <EditForm EditContext="formContext" OnValidSubmit="SubmitAddOrEditAsync">
+                        <Table Grid Items="GetAbsences" Comparer="CompareAbsences" CssClass="table-striped mb-0" MaxVisibleRows="15"
+                               NotSortable="@(showAddRow || addOrEditAbsence is not null)">
+                            <TableHeader>
+                                <Th NotSortable>@Localizer["shrinkage_label_event"]</Th>
+                                <Th>@Localizer["shrinkage_label_from"]</Th>
+                                <Th>@Localizer["shrinkage_label_to"] </Th>
+                                <Th NotSortable>@Localizer["shrinkage_label_granted_by"]</Th>
+                                <Th>@Localizer["shrinkage_label_granted_on"]</Th>
+                                <Th NotSortable></Th>
+                            </TableHeader>
+                            <RowTemplate Context="row">
+                                <Tr TItem="BlazorLayout.Modeles.AbsenceDto" Item="row"
+                                    IsSelected="@(addOrEditAbsence?.Id == row.Id)"
+                                    OnSelection="OnClick">
+                                    @if (addOrEditAbsence?.Id == row.Id)
+                                    {
+                                        <!-- EDIT MODE -->
+                                       @*  <td>
+                                            <InputSelect class="form-control"
+                                                         @bind-Value="@newAbsenceType"
+                                                         TValue="AbsenceType" @oninput="OnAbsenceTypeChanged">
+                                                <option value="@AbsenceType.Unspecified" disabled>
+                                                    @Localizer["shrinkage_message_select_absence"]
+                                                </option>
+                                                @foreach (AbsenceType absenceType in Enum.GetValues(typeof(AbsenceType))
+                                                                  .Cast<AbsenceType>()
+                                                                  .Where(a => a != AbsenceType.Unspecified))
+                                                {
+                                                    <option @key="absenceType" value="@absenceType">@absenceType.ConvertToAbsenceTypeString()</option>
+                                                }
+                                            </InputSelect>
+                                        </td>
+                                        <td>
+                                            <form novalidate>
+                                                <InputDate class="form-control"
+                                                           @bind-Value="newStartDate"
+                                                           @oninput="OnStartDateChanged"
+                                                           @onblur="OnStartDateBlurChanged"
+                                                           @attributes="InputAttributes"/>
+                                            </form>
+                                        </td>
+                                        <td>
+                                            <form novalidate>
+                                                <InputDate class="form-control"
+                                                           @bind-Value="newEndDate"
+                                                           @oninput="OnEndDateChanged"
+                                                           @onblur="OnEndDateBlurChanged"
+                                                           @attributes="InputAttributes"/>
+                                            </form>
+                                        </td>
+                                        <td class="text-muted">@GetRowCreatedBy(addOrEditAbsence!.CreatedBy)</td>
+                                        <td class="text-muted">@DateOnly.FromDateTime(addOrEditAbsence!.CreatedAt).ToShortDateString()</td>
+                                        <td>
+                                            <div class="d-flex gap-2 justify-content-center">
+                                                <button type="submit" class="btn btn-sm"
+                                                        title="@Localizer["shrinkage_tooltip_save"]">
+                                                    <img src="img/save-icon.svg" class="save-icon-size" alt="Save"/>
+                                                </button>
+                                                <button type="button" class="btn btn-sm"
+                                                        title="@Localizer["shrinkage_tooltip_cancel"]"
+                                                        @onclick="CancelEdit">
+                                                    <img src="img/cross-icon.svg" class="icon-size" alt="Cancel"/>
+                                                </button>
+                                            </div>
+                                        </td> *@
+                                    }
+                                    else
+                                    {
+                                        <!-- VIEW MODE -->
+                                        <td>@row.AbsenceType.ConvertToAbsenceTypeString()</td>
+                                        <td>@row.StartDate.ToShortDateString()</td>
+                                        <td>@row.EndDate.ToShortDateString()</td>
+                                        <td>@GetRowCreatedBy(row.CreatedBy)</td>
+                                        <td>@DateOnly.FromDateTime(row.CreatedAt).ToShortDateString()</td>
+                                        <td>
+                                            <div class="d-flex gap-2 justify-content-center">
+                                                <button type="button" class="btn btn-sm"
+                                                        title="@Localizer["shrinkage_tooltip_edit"]"
+                                                        disabled="@(IsAbsenceInPast(row) || showAddRow || addOrEditAbsence is not null)"
+                                                        @onclick="() => StartEdit(row)">
+                                                    <img src="img/edit-icon.svg" class="icon-size" alt="Edit"/>
+                                                </button>
+                                                <button type="button" class="btn btn-sm"
+                                                        title="@Localizer["shrinkage_tooltip_delete"]"
+                                                        disabled="@(IsAbsenceInPast(row) || showAddRow || addOrEditAbsence is not null)"
+                                                        >
+                                                    <img src="img/bin-icon.svg" class="icon-size" alt="Delete"/>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    }
+                                </Tr>
+                            </RowTemplate>
+                        </Table>
+                    </EditForm>
+                </div>
+            </div>
         </div>
-
-        <button class="btn btn-sm btn-outline-primary" @onclick="OnRefresh">
-            🔄 Refresh
-        </button>
-    </div>
-
-    <div class="card-body">
-        <p class="text-muted mb-3">
-            Ici tu vas afficher la liste des activités, filtrer par date, ajouter / supprimer, etc.
-        </p>
-
-        <div class="alert alert-info mb-0">
-            ✅ Component prêt. Ajoute ton tableau / formulaire ici.
-        </div>
-    </div>
-
-    <div class="card-footer bg-white border-0 d-flex justify-content-end gap-2">
-        <button class="btn btn-sm btn-outline-secondary" @onclick="OnReset">
-            Reset
-        </button>
-        <button class="btn btn-sm btn-primary" @onclick="OnAdd">
-            + Add activity
-        </button>
     </div>
 </div>
-
-@code {
-    private void OnRefresh()
-    {
-        // TODO: appeler ton API / store pour reload
-        Console.WriteLine("Refresh clicked");
-    }
-
-    private void OnReset()
-    {
-        // TODO: reset filtres / sélection
-        Console.WriteLine("Reset clicked");
-    }
-
-    private void OnAdd()
-    {
-        // TODO: ouvrir modal / formulaire
-        Console.WriteLine("Add clicked");
-    }
-}

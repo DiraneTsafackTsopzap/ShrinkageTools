@@ -1,0 +1,33 @@
+﻿.btn:hover {
+    background-color: lightgrey !important;
+}
+
+.icon-size {
+    width: 25px;
+    height: 25px;
+}
+
+.save-icon-size {
+    width: 20px;
+    height: 20px;
+}
+
+.btn:disabled {
+    pointer-events: none;
+}
+
+/* Common spacing for action buttons in a row */
+.row-actions {
+    margin-top: -6px;
+    margin-bottom: -6px;
+}
+
+/* Width utility for first column */
+.w-20 {
+    width: 20%;
+}
+
+.align-text {
+    vertical-align: middle;
+    text-align: center;
+}

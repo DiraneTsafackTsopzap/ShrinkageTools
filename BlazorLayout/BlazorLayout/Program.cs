@@ -47,6 +47,8 @@ builder.Services.AddSingleton<UserByEmailStore>();
 builder.Services.AddSingleton<TeamsStore>();
 builder.Services.AddSingleton<UserShrinkageStore>();
 builder.Services.AddSingleton<UserDailySummaryStore>();
+builder.Services.AddSingleton<UserShrinkageStore>();
+builder.Services.AddSingleton<UserAbsencesStore>();
 builder.Services.AddSingleton<ShrinkageApi>();
 
 

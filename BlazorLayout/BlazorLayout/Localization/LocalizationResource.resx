@@ -198,6 +198,12 @@
   <data name="shrinkage_button_transferred" xml:space="preserve">
     <value>Transferred</value>
   </data>
+  <data name="shrinkage_delete_absence_message_GDD" xml:space="preserve">
+    <value>Should the event - {0} of {1:dd.MM.yyyy} - {2:dd.MM.yyyy} be deleted?</value>
+  </data>
+  <data name="shrinkage_delete_absence_title" xml:space="preserve">
+    <value>Delete absence</value>
+  </data>
   <data name="shrinkage_delete_activity_message_DDTS" xml:space="preserve">
     <value>Should the booked time from: {0:HH:mm} to: {1:HH:mm} (Duration: {2:hh\:mm}) for the activity "{3}" be deleted?</value>
   </data>
@@ -225,8 +231,17 @@
   <data name="shrinkage_label_duration" xml:space="preserve">
     <value>Duration</value>
   </data>
+  <data name="shrinkage_label_event" xml:space="preserve">
+    <value>Event</value>
+  </data>
   <data name="shrinkage_label_from" xml:space="preserve">
     <value>From</value>
+  </data>
+  <data name="shrinkage_label_granted_by" xml:space="preserve">
+    <value>Created by</value>
+  </data>
+  <data name="shrinkage_label_granted_on" xml:space="preserve">
+    <value>Created at</value>
   </data>
   <data name="shrinkage_label_public_holiday" xml:space="preserve">
     <value>Holiday</value>
@@ -275,6 +290,9 @@
   </data>
   <data name="shrinkage_tooltip_edit" xml:space="preserve">
     <value>update</value>
+  </data>
+  <data name="shrinkage_tooltip_refresh" xml:space="preserve">
+    <value>refresh</value>
   </data>
   <data name="shrinkage_tooltip_save" xml:space="preserve">
     <value>save</value>
