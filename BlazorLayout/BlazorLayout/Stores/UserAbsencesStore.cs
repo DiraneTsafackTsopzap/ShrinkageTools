@@ -11,10 +11,31 @@ public sealed partial class UserAbsencesStore : StoreBase
 
     public void InitializeUserAbsences(Guid userId, List<AbsenceDto> absences)
     {
+        // Avant 
+        //Console.WriteLine("=== Avant InitializeUserAbsences ===");
+        //foreach (var kv in __Absences)
+        //{
+        //    Console.WriteLine($"User {kv.Key} → {kv.Value.Count} absences");
+        //}
+
+        // Initialization : Pour chque UserId , Place la Liste de ses Absences d'ou le UserId = absences
+        /// <summary>
+        /// Associe un utilisateur à sa liste d’absences dans le Store
+        /// (userId → absences) en recréant le dictionnaire pour notifier l’UI.
+        /// </summary>
+
+
         Absences = new Dictionary<Guid, IReadOnlyList<AbsenceDto>>(__Absences)
         {
             [userId] = absences,
         };
+
+        // APRES
+        //Console.WriteLine("=== APRES InitializeUserAbsences ===");
+        //foreach (var kv in __Absences)
+        //{
+        //    Console.WriteLine($"User {kv.Key} → {kv.Value.Count} absences");
+        //}
     }
 
     public void Update(AbsenceDto absence)
@@ -46,3 +67,6 @@ public sealed partial class UserAbsencesStore : StoreBase
 }
 
 
+//1- Question a Se Poser ici la et Tres Importante : Pour Un User donnee , Quelle sont ses Absences ?
+
+// Chaque User a une Liste d'Absences associees a lui-meme .
