@@ -14,7 +14,8 @@ namespace BlazorLayout.Stores;
 
         public void InitializeUser(UserDto user)
         {
-            if (__User is not null) throw new InvalidOperationException("User was already been initialized.");
+            if (IsInitialized) throw new InvalidOperationException("User was already been initialized.");
+
             User = user;
         }
 
@@ -24,3 +25,7 @@ namespace BlazorLayout.Stores;
         }
     }
 
+
+// 1- is not null : veut dire que l'objet n'est pas null , c'est a dire que l'objet existe 
+// 2- IsInitialized : est une propriete booleenne qui indique si l'utilisateur a ete initialise ou non
+// 
