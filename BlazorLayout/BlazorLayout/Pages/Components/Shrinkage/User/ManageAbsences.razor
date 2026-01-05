@@ -1,7 +1,11 @@
-﻿@using BlazorLayout.Pages.Components.Shared
+﻿@using BlazorLayout.Enums
+@using BlazorLayout.Modeles
+
 @using BlazorLayout.Pages.Components.Shrinkage.ReusableComponents
 @using BlazorLayout.Pages.Components.Shrinkage.ReusableComponents.Table
+@using BlazorLayout.Shared
 @using BlazorLayout.Utilities
+@using BlazorLayout.Pages.Components.Shrinkage.ReusableComponents.Dialog
 
 
 
@@ -59,16 +63,16 @@ else if (warningMessage is not null)
                                     @if (addOrEditAbsence?.Id == row.Id)
                                     {
                                         <!-- EDIT MODE -->
-                                       @*  <td>
+                                         <td>
                                             <InputSelect class="form-control"
                                                          @bind-Value="@newAbsenceType"
-                                                         TValue="AbsenceType" @oninput="OnAbsenceTypeChanged">
-                                                <option value="@AbsenceType.Unspecified" disabled>
+                                                         TValue="AbsenceTypeDto" @oninput="OnAbsenceTypeChanged">
+                                                <option value="@AbsenceTypeDto.Unspecified" disabled>
                                                     @Localizer["shrinkage_message_select_absence"]
                                                 </option>
-                                                @foreach (AbsenceType absenceType in Enum.GetValues(typeof(AbsenceType))
-                                                                  .Cast<AbsenceType>()
-                                                                  .Where(a => a != AbsenceType.Unspecified))
+                                                @foreach (AbsenceTypeDto absenceType in Enum.GetValues(typeof(AbsenceTypeDto))
+                                                                  .Cast<AbsenceTypeDto>()
+                                                                                            .Where(a => a != AbsenceTypeDto.Unspecified))
                                                 {
                                                     <option @key="absenceType" value="@absenceType">@absenceType.ConvertToAbsenceTypeString()</option>
                                                 }
@@ -106,7 +110,7 @@ else if (warningMessage is not null)
                                                     <img src="img/cross-icon.svg" class="icon-size" alt="Cancel"/>
                                                 </button>
                                             </div>
-                                        </td> *@
+                                        </td> 
                                     }
                                     else
                                     {
@@ -127,7 +131,7 @@ else if (warningMessage is not null)
                                                 <button type="button" class="btn btn-sm"
                                                         title="@Localizer["shrinkage_tooltip_delete"]"
                                                         disabled="@(IsAbsenceInPast(row) || showAddRow || addOrEditAbsence is not null)"
-                                                        >
+                                                        @onclick="() => ShowDelete(row)">
                                                     <img src="img/bin-icon.svg" class="icon-size" alt="Delete"/>
                                                 </button>
                                             </div>
@@ -142,3 +146,19 @@ else if (warningMessage is not null)
         </div>
     </div>
 </div>
+
+@code {
+     private void ShowDelete(AbsenceDto row)
+    {
+        selectedAbsence = row;
+        var deleteTitle = Localizer["shrinkage_delete_absence_title"];
+        var deleteMessage = Localizer["shrinkage_delete_absence_message_GDD", row.AbsenceType.ConvertToAbsenceTypeString(), row.StartDate, row.EndDate];
+
+        ModalStack.PushModal(close => @<ConfirmationDialog
+                                          CloseModal="close"
+                                          Title="@deleteTitle"
+                                          Message="@deleteMessage"
+                                          ButtonText="@Localizer["shrinkage_button_delete"]"
+                                          OnConfirm="@(DeleteSelectedAbsence)"/>);
+    }
+}

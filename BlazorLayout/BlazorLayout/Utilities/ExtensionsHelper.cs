@@ -89,5 +89,17 @@ namespace BlazorLayout.Utilities;
 
         return result;
     }
+
+    public static AbsenceTypeDto ConvertAbsenceTypeToEnum(this string absenceType)
+    {
+        var result = absenceType switch
+        {
+            nameof(AbsenceTypeDto.Sickness) => AbsenceTypeDto.Sickness,
+            nameof(AbsenceTypeDto.Vacation) => AbsenceTypeDto.Vacation,
+            _ => throw new InvalidEnumArgumentException(nameof(absenceType)),
+        };
+
+        return result;
+    }
 }
 

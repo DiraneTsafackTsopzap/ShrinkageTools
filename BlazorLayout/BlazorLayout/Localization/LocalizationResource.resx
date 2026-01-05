@@ -147,6 +147,9 @@
   <data name="shrinkage_absences" xml:space="preserve">
     <value>Absences</value>
   </data>
+  <data name="shrinkage_absence_date_to_before_from" xml:space="preserve">
+    <value>The "To" date is before the "From" date</value>
+  </data>
   <data name="shrinkage_absence_type_sickness" xml:space="preserve">
     <value>Sickness</value>
   </data>
@@ -225,6 +228,15 @@
   <data name="shrinkage_error_message_from_should_be_smaller_to" xml:space="preserve">
     <value>The start time must be before the end time.</value>
   </data>
+  <data name="shrinkage_error_save_absence" xml:space="preserve">
+    <value>Failed to save absence</value>
+  </data>
+  <data name="shrinkage_error_save_absence_conflict" xml:space="preserve">
+    <value>Failed to save absence. Conflict.</value>
+  </data>
+  <data name="shrinkage_error_unexpected" xml:space="preserve">
+    <value>Unexpected error occured</value>
+  </data>
   <data name="shrinkage_label_activity" xml:space="preserve">
     <value>Activity</value>
   </data>
@@ -258,11 +270,17 @@
   <data name="shrinkage_loader_message" xml:space="preserve">
     <value>Loading</value>
   </data>
+  <data name="shrinkage_message_select_absence" xml:space="preserve">
+    <value>Select a absence</value>
+  </data>
   <data name="shrinkage_message_select_activity" xml:space="preserve">
     <value>Select Activity</value>
   </data>
   <data name="shrinkage_message_select_team" xml:space="preserve">
     <value>Select Team</value>
+  </data>
+  <data name="shrinkage_select_absence_type" xml:space="preserve">
+    <value>Please select absence type</value>
   </data>
   <data name="shrinkage_status_all" xml:space="preserve">
     <value>All</value>

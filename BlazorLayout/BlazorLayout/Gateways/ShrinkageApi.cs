@@ -344,7 +344,45 @@ namespace BlazorLayout.Gateways
                 throw new DeleteActivityException(ex, correlationId);
             }
         }
-
+        public async Task SaveAbsenceAsync(AbsenceDto absence, CancellationToken token)
+        {
+            var correlationId = Guid.NewGuid();
+            using var __ = logger.BeginScope(new Dictionary<string, object>
+            {
+                ["@Request"] = absence,
+                ["CorrelationId"] = correlationId,
+            });
+            try
+            {
+                await HttpClient.PostAsJsonAsync($"api/shrinkage/absence", new SaveUserAbsenceRequest_M
+                {
+                    CorrelationId = correlationId,
+                    Absence = absence,
+                }, token);
+                userAbsencesStore.Update(absence);
+                userShrinkageStore.RemoveUserShrinkage(absence.UserId, absence.StartDate, absence.EndDate);
+            }
+            catch (HttpRequestException ex) when (ex is { StatusCode: HttpStatusCode.BadRequest })
+            {
+                logger.LogError(ex, "Failed to save absence.");
+                throw new BadRequestException(ex, correlationId);
+            }
+            catch (HttpRequestException ex) when (ex is { StatusCode: HttpStatusCode.NotFound })
+            {
+                logger.LogError(ex, "Failed to save absence.");
+                throw new NotFoundException(ex, correlationId);
+            }
+            catch (HttpRequestException ex) when (ex is { StatusCode: HttpStatusCode.Conflict })
+            {
+                logger.LogError(ex, "Failed to save absence.");
+                throw new ConflictException(ex, correlationId);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Failed to save absence.");
+                throw new SaveAbsenceException(ex, correlationId);
+            }
+        }
         public ValueTask EnsureGetAbsencesByUser(IReadOnlyList<Guid> userIds, bool forceRefresh, CancellationToken cancellationToken)
         {
             var request = ensureGetUserAbsences.GetOrAdd(userIds, () => new IdempotentApiRequest(async token =>
@@ -393,5 +431,51 @@ namespace BlazorLayout.Gateways
             return request.Run(cancellationToken);
         }
 
+
+        public async Task DeleteAbsenceByUserAsync(Guid id, Guid userId, Guid deletedBy, Guid teamId, DateOnly startDate, DateOnly endDate, CancellationToken cancellationToken)
+        {
+            var correlationId = Guid.NewGuid();
+            using var __ = logger.BeginScope(new Dictionary<string, object>
+            {
+                ["CorrelationId"] = correlationId,
+                ["AbsenceId"] = id,
+                ["DeletedBy"] = deletedBy,
+            });
+            try
+            {
+                var request = new DeleteUserAbsenceRequest_M
+                {
+                    CorrelationId = correlationId,
+                    Id = id,
+                    DeletedBy = deletedBy,
+                };
+                var response = await HttpClient.DeleteJsonAsync("api/shrinkage/absences", request, cancellationToken);
+                response.EnsureSuccessStatusCode();
+                userAbsencesStore.Remove(userId, id);
+                userShrinkageStore.RemoveUserShrinkage(userId, startDate, endDate);
+                //var publicHolidays = publicHolidaysStore.GetPublicHolidaysForTeamId(teamId);
+                //userDailySummaryStore.RemoveAbsence(startDate, endDate, publicHolidays);
+            }
+            catch (HttpRequestException ex) when (ex is { StatusCode: HttpStatusCode.BadRequest })
+            {
+                logger.LogError(ex, "Failed to delete absence by id.");
+                throw new BadRequestException(ex, correlationId);
+            }
+            catch (HttpRequestException ex) when (ex is { StatusCode: HttpStatusCode.NotFound })
+            {
+                logger.LogError(ex, "Failed to delete absence by id.");
+                throw new NotFoundException(ex, correlationId);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Failed to delete absence by id.");
+                throw new DeleteAbsenceException(ex, correlationId);
+            }
+        }
+
+        public void RemoveIdempotencyRequest(Guid userId, DateOnly date)
+        {
+            ensureGetUserShrinkage[userId].Remove(date);
+        }
     }
 }

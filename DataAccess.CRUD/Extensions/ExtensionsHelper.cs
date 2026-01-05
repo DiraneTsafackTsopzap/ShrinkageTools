@@ -105,6 +105,7 @@ public static class ExtensionsHelper
             AbsenceType.Sickness => ShrinkageConstants.Sickness,
             AbsenceType.Vacation => ShrinkageConstants.Vacation,
             _ => throw new InvalidEnumArgumentException(nameof(absenceType))
+           // _ => string.Empty // ✅ Blazor-safe
         };
     }
 

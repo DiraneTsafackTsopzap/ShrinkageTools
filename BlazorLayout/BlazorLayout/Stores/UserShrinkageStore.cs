@@ -103,9 +103,30 @@ public sealed partial class UserShrinkageStore : StoreBase
         };
     }
 
+    public void RemoveUserShrinkage(Guid userId, DateOnly startInclusive, DateOnly endInclusive)
+    {
+        var start = startInclusive;
+        var end = endInclusive;
+        if (end < start) (start, end) = (end, start);
+
+        if (!__UsersShrinkages.TryGetValue(userId, out var userShrinkages))
+            throw new InvalidOperationException("User shrinkage for this user were not initialized");
+
+        for (var day = start; day <= end; day = day.AddDays(1))
+        {
+            if (userShrinkages.TryGetValue(day, out UserShrinkageDto _))
+            {
+                var copy = new Dictionary<DateOnly, UserShrinkageDto>(userShrinkages);
+                copy.Remove(day);
+                UsersShrinkages = new Dictionary<Guid, IReadOnlyDictionary<DateOnly, UserShrinkageDto>>(__UsersShrinkages)
+                {
+                    [userId] = new Dictionary<DateOnly, UserShrinkageDto>(copy),
+                };
+            }
+        }
 
 
-
+    }
 }
 
 

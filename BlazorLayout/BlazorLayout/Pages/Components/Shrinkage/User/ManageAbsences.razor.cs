@@ -4,9 +4,11 @@ using BlazorLayout.Extensions;
 using BlazorLayout.Gateways;
 using BlazorLayout.Modeles;
 using BlazorLayout.Stores;
+using BlazorLayout.Utilities;
 using BlazorLayout.Validators;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
+using Microsoft.AspNetCore.Components.Web;
 using Microsoft.Extensions.Localization;
 using SystemDateOnly = System.DateOnly;
 namespace BlazorLayout.Pages.Components.Shrinkage.User
@@ -24,6 +26,11 @@ namespace BlazorLayout.Pages.Components.Shrinkage.User
 
         [Inject]
         private UserAbsencesStore UserAbsencesStore { get; set; } = null!;
+
+        [Inject]
+        private UserDailySummaryStore UserDailySummaryStore { get; set; } = null!;
+
+        private AbsenceTypeDto newAbsenceType;
 
         private string? errorMessage;
         private string? warningMessage;
@@ -48,7 +55,13 @@ namespace BlazorLayout.Pages.Components.Shrinkage.User
                 ? new[] { addOrEditAbsence }.Concat(userAbsence).ToList()
                 : userAbsence;
 
-        private AbsenceTypeDto newAbsenceType;
+       
+
+        private Dictionary<string, object> InputAttributes { get; set; } =
+        new()
+        {
+            { "min", DateTime.Today.AddDays(1).ToString("yyyy-MM-dd") },
+        };
         public sealed record StateT
         {
             public UserDto User { get; init; } = null!;
@@ -76,6 +89,45 @@ namespace BlazorLayout.Pages.Components.Shrinkage.User
             await LoadUserAbsencesAsync(true);
         }
 
+
+        private void OnStartDateBlurChanged(FocusEventArgs e)
+        {
+            if (addOrEditAbsence != null)
+            {
+                addOrEditAbsence = addOrEditAbsence with
+                {
+                    StartDate = newStartDate,
+                };
+                if (addOrEditAbsence!.EndDate < newStartDate)
+                {
+                    newEndDate = newStartDate;
+                    addOrEditAbsence = addOrEditAbsence with
+                    {
+                        EndDate = newStartDate,
+                    };
+                }
+
+                ValidateOverlap(addOrEditAbsence);
+            }
+        }
+        private void OnStartDateChanged(ChangeEventArgs e)
+        {
+            errorMessage = null;
+            warningMessage = null;
+            if (SystemDateOnly.TryParse(e.ToString(), out var selectedStartDate))
+            {
+                if (selectedStartDate < tomorrow)
+                {
+                    newStartDate = addOrEditAbsence!.StartDate;
+                }
+            }
+        }
+
+        private void CancelEdit()
+        {
+            formContext = new EditContext(new AbsenceDto());
+            Reset();
+        }
         private async Task LoadUserAbsencesAsync(bool forceRefresh)
         {
             try
@@ -149,10 +201,60 @@ namespace BlazorLayout.Pages.Components.Shrinkage.User
             };
         }
 
+        private void OnEndDateChanged(ChangeEventArgs e)
+        {
+            errorMessage = null;
+            warningMessage = null;
+            if (SystemDateOnly.TryParse(e.ToString(), out var selectedEndDate))
+            {
+                if (selectedEndDate < tomorrow)
+                {
+                    newEndDate = addOrEditAbsence!.EndDate;
+                }
+            }
+        }
+
+        private void OnEndDateBlurChanged(FocusEventArgs e)
+        {
+            if (addOrEditAbsence != null)
+            {
+                addOrEditAbsence = addOrEditAbsence with
+                {
+                    EndDate = newEndDate,
+                };
+                if (addOrEditAbsence.StartDate > newEndDate)
+                {
+                    newStartDate = newEndDate;
+                    addOrEditAbsence = addOrEditAbsence with
+                    {
+                        StartDate = newEndDate,
+                    };
+                }
+
+                ValidateAbsenceRequest(addOrEditAbsence);
+            }
+        }
         private void OnClick(AbsenceDto row)
         {
             selectedAbsence = row;
             StateHasChanged();
+        }
+
+        private void OnAbsenceTypeChanged(ChangeEventArgs e)
+        {
+            errorMessage = null;
+            warningMessage = null;
+
+            if (e.Value != null && e.Value.ToString() != nameof(AbsenceTypeDto.Unspecified))
+            {
+                if (addOrEditAbsence != null)
+                {
+                    addOrEditAbsence = addOrEditAbsence with
+                    {
+                        AbsenceType = e.Value.ToString()!.ConvertAbsenceTypeToEnum(),
+                    };
+                }
+            }
         }
         private async Task SubmitAddOrEditAsync()
         {
@@ -197,10 +299,10 @@ namespace BlazorLayout.Pages.Components.Shrinkage.User
             try
             {
                 isLoading = true;
-                //await ShrinkageApi.SaveAbsenceAsync(updatedAbsence, TimeoutToken(Timeout));
+                await ShrinkageApi.SaveAbsenceAsync(updatedAbsence, TimeoutToken(Timeout));
 
-                //UserDailySummaryStore.AddAbsenceRange(updatedAbsence.Id, updatedAbsence.AbsenceType,
-                //    updatedAbsence.StartDate, updatedAbsence.EndDate);
+                UserDailySummaryStore.AddAbsenceRange(updatedAbsence.Id, updatedAbsence.AbsenceType,
+                updatedAbsence.StartDate, updatedAbsence.EndDate);
                 Reset();
             }
             catch (ConflictException ex)
@@ -267,6 +369,48 @@ namespace BlazorLayout.Pages.Components.Shrinkage.User
             {
                 ValidateOverlap(absence);
             }
+        }
+
+        private async Task DeleteSelectedAbsence()
+        {
+            errorMessage = null;
+            warningMessage = null;
+            if (selectedAbsence is null) return;
+
+            try
+            {
+                await ShrinkageApi.DeleteAbsenceByUserAsync(selectedAbsence.Id, State.User.UserId, State.User.UserId, State.User.TeamId!.Value, selectedAbsence.StartDate, selectedAbsence.EndDate, TimeoutToken(Timeout));
+
+                if (IsTodayWithin(selectedAbsence.StartDate, selectedAbsence.EndDate))
+                {
+                    ShrinkageApi.RemoveIdempotencyRequest(State.User.UserId, SystemDateOnly.FromDateTime(DateTime.Today));
+                }
+
+                selectedAbsence = null;
+                Reset();
+            }
+            catch (Exception ex) when (ex is BadRequestException or NotFoundException or DeleteAbsenceException)
+            {
+                errorMessage = Localizer["shrinkage_error_delete_absence"];
+                if (ex.InnerException is HttpRequestException ex2 && ex2.GetReasonMessage(ex) is { } reason)
+                    errorMessage += " " + reason;
+            }
+            catch (OperationCanceledException) when (IsDisposing) { }
+
+            catch (Exception ex)
+            {
+                errorMessage = Localizer["shrinkage_error_unexpected"];
+                if (ex.InnerException is HttpRequestException ex2 && ex2.GetReasonMessage(ex) is { } reason)
+                    errorMessage += " " + reason;
+            }
+        }
+
+        private static bool IsTodayWithin(SystemDateOnly startDate, SystemDateOnly endDate)
+        {
+            var start = startDate;
+            var end = endDate;
+            if (end < start) (start, end) = (end, start);
+            return today >= start && today <= end;
         }
 
     }
