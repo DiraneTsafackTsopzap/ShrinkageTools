@@ -38,13 +38,40 @@ public sealed partial class UserAbsencesStore : StoreBase
         //}
     }
 
+
     public void Update(AbsenceDto absence)
     {
+        /// <summary>
+        /// Rechercher La Position (index) De L'absence Dans La Liste de L'User
+        ///  si index = -1 ou null , Absence non Trouve : Ajout
+        ///  si index = 0  , Absence Trouve a la Premiere Position
+        /// </summary>
         var index = __Absences[absence.UserId].FindIndex(x => x.Id == absence.Id);
-        var list = __Absences[absence.UserId];
+
+
+         var list = __Absences[absence.UserId];
+
+
+        /// <summary>
+        ///   si index == 0 ou null alors ceci sera execute  list = index is null ? [.. list, absence]
+        ///   si non  list.WithAt(index.Value, absence);
+        /// </summary>
+        /// 
+
+        ///<summary>
+        /// WithAt fonctionne comme ceci 
+        /// Image Mentale :  Avant [ A , B , C ]
+        /// list.WithAt (1, X);  veut dire que index 1 qui correspond a B sera remplace par le nouvel element X
+        /// ma liste sera [ A , X , C ]
+        /// </summary>
 
         list = index is null ? [.. list, absence] : list.WithAt(index.Value, absence);
 
+        ///<summary>
+        /// Mettre à jour le Store (IMMUTABLEMENT)
+        /// On remplace seulement la liste du user concerné  [userId] = absences ds le Initialise devient [absence.userId] = list.OrderBydescending
+        /// </summary>
+        
         Absences = new Dictionary<Guid, IReadOnlyList<AbsenceDto>>(__Absences)
         {
             [absence.UserId] = list.OrderByDescending(x => x.StartDate).ToArray(),

@@ -48,14 +48,36 @@ namespace BlazorLayout.Pages.Components.Shrinkage.User
         private const int Timeout = 30_000;
         private string GetRowCreatedBy(string? createdBy) => string.IsNullOrWhiteSpace(createdBy) ? "-" : createdBy;
 
-        private IReadOnlyList<AbsenceDto> GetAbsences =>
-        userAbsence == null
-            ? []
-            : showAddRow && addOrEditAbsence is not null
-                ? new[] { addOrEditAbsence }.Concat(userAbsence).ToList()
-                : userAbsence;
 
-       
+        private IReadOnlyList<AbsenceDto> GetAbsences =>
+        userAbsence == null ? []
+                 : showAddRow && addOrEditAbsence is not null ? new[] { addOrEditAbsence }.Concat(userAbsence).ToList()
+                 : userAbsence;
+
+        /// <summary>
+        ///    Cas 1 : userAbsence == null ? [] , Si il Y'a aucune Absence on retourne une liste vide
+        /// </summary>
+
+        /// <summary>
+        /// Cas 2 : showAddRow == true ET addOrEditAbsence n’est pas null.
+        /// 
+        /// Cela correspond au mode AJOUT d’une absence.
+        /// Une absence est en cours de création (mais pas encore sauvegardée).
+        /// 
+        /// Dans ce cas, on construit une nouvelle liste en plaçant
+        /// l’absence en cours d’ajout au-dessus des absences existantes (userAbsence),
+        /// uniquement pour l’affichage dans l’UI, sans modifier le Store.
+        /// </summary>
+
+        /// <summary>
+        /// Cas 3 :  : userAbsence; Affichage Nornal
+        /// 
+        /// Les absences sont déjà chargées (userAbsence n’est pas null)
+        /// et aucun ajout n’est en cours (showAddRow == false).
+        /// 
+        /// Dans ce cas, on retourne simplement la liste existante des absences
+        /// de l’utilisateur, sans modification ni ajout temporaire.
+        /// </summary>
 
         private Dictionary<string, object> InputAttributes { get; set; } =
         new()
@@ -77,7 +99,9 @@ namespace BlazorLayout.Pages.Components.Shrinkage.User
 
         protected override async Task OnInitializedAsync()
         {
-           
+            // Initialisation du Localizer pour les validators statiques
+            AdditionalTimeValidator.Localizer ??= Localizer;
+
             await base.OnInitializedAsync();
 
             await LoadUserAbsencesAsync(false);
@@ -135,8 +159,15 @@ namespace BlazorLayout.Pages.Components.Shrinkage.User
                 errorMessage = null;
                 isLoading = true;
 
+                /// <summary>
+                /// les crochets [ ... ] equivalent de new List<Guid> { State.User.UserId }
+                /// </summary>  
                 await ShrinkageApi.EnsureGetAbsencesByUser([State.User.UserId], forceRefresh, TimeoutToken(Timeout));
 
+                /// <summary>
+                /// /// 
+                /// userAbsence ici permet de manipuler les Absences sans toucher au Store
+                /// </summary>
                 userAbsence = State.UsersAbsences.TryGetValue(State.User.UserId, out var absence) ? absence : [];
 
                 // reset add/edit state
@@ -249,6 +280,44 @@ namespace BlazorLayout.Pages.Components.Shrinkage.User
             {
                 if (addOrEditAbsence != null)
                 {
+                    /// <summary>
+                    /// Le mot-clé <c>with</c> permet de créer une NOUVELLE copie d'un objet
+                    /// en modifiant uniquement certaines propriétés, sans toucher à l'objet original.
+                    ///
+                    /// 🧠 Image mentale :
+                    /// - Ancienne absence → une feuille déjà remplie
+                    /// - <c>with</c>       → une photocopie de cette feuille
+                    /// - Modification     → on corrige juste une ligne sur la copie
+                    /// - Résultat         → l'original reste intact
+                    ///
+                    /// Exemple concret :
+                    ///
+                    /// <code>
+                    /// var a1 = new AbsenceDto
+                    /// {
+                    ///     Id = 1,
+                    ///     AbsenceType = AbsenceTypeDto.Vacation,
+                    ///     StartDate = new DateOnly(2026, 01, 10),
+                    ///     EndDate = new DateOnly(2026, 01, 12),
+                    ///     CreatedBy = "admin"
+                    /// };
+                    ///
+                    /// var a2 = a1 with
+                    /// {
+                    ///     AbsenceType = AbsenceTypeDto.Sick
+                    /// };
+                    /// </code>
+                    ///
+                    /// Résultat :
+                    /// - a1.AbsenceType == Vacation (inchangé)
+                    /// - a2.AbsenceType == Sick     (nouvelle copie)
+                    ///
+                    /// Cette approche immuable est utilisée afin que Blazor détecte
+                    /// le changement de référence et mette correctement à jour
+                    /// l'interface utilisateur.
+                    /// </summary>
+
+
                     addOrEditAbsence = addOrEditAbsence with
                     {
                         AbsenceType = e.Value.ToString()!.ConvertAbsenceTypeToEnum(),
@@ -258,6 +327,10 @@ namespace BlazorLayout.Pages.Components.Shrinkage.User
         }
         private async Task SubmitAddOrEditAsync()
         {
+            /// <summary>
+            /// Ajout d'une Absence
+            /// </summary>
+            
             if (showAddRow && addOrEditAbsence is not null)
             {
                 ValidateAbsenceRequest(addOrEditAbsence);
@@ -267,6 +340,10 @@ namespace BlazorLayout.Pages.Components.Shrinkage.User
                 await SaveAbsence(addOrEditAbsence);
                 return;
             }
+
+            /// <summary>
+            /// Edition d'une Absence car showaddrow == false ici
+            /// </summary>
 
             if (addOrEditAbsence is not null)
             {
@@ -336,7 +413,7 @@ namespace BlazorLayout.Pages.Components.Shrinkage.User
                 UserId = State.User.UserId,
                 TeamId = State.User.TeamId!.Value,
                 AbsenceType = AbsenceTypeDto.Unspecified,
-                StartDate = tomorrow,
+                StartDate = tomorrow, // Les Absences ne peuvent pas Commencer Aujourdhui , Mais Plut tot Demain
                 EndDate = tomorrow,
                 CreatedBy = State.User.Email,
                 CreatedAt = DateTime.Now,
@@ -358,11 +435,19 @@ namespace BlazorLayout.Pages.Components.Shrinkage.User
         {
             if (absence.AbsenceType == AbsenceTypeDto.Unspecified)
             {
+                ///<summary>
+                /// L'erreur ci est declenche si l'user ne choisit aucune Absence
+                /// </summary>
+ 
                 warningMessage = Localizer["shrinkage_select_absence_type"];
             }
 
             else if (absence.StartDate > absence.EndDate)
             {
+                ///<summary>
+                /// L'erreur ci est declenche si J'entre Par Exemple StartDate : 15.01.2026 et EndDate : 10.01.2026
+                /// </summary>
+                
                 warningMessage = Localizer["shrinkage_absence_date_to_before_from"];
             }
             else
@@ -415,3 +500,7 @@ namespace BlazorLayout.Pages.Components.Shrinkage.User
 
     }
 }
+
+// La clé à comprendre : les crochets [ ... ] dans le code C# sont utilisés pour définir des attributs.
+// [State.User.UserId] est equivalent de  new List<Guid> { State.User.UserId }
+

@@ -318,6 +318,9 @@
   <data name="shrinkage_user_activities" xml:space="preserve">
     <value>User Activities</value>
   </data>
+  <data name="shrinkage_warning_absence_overlap" xml:space="preserve">
+    <value>An absence has already been booked for the specified period.</value>
+  </data>
   <data name="shrinkage_warning_activity_overlap_S" xml:space="preserve">
     <value>The selected time overlaps with the activity: {0}</value>
   </data>

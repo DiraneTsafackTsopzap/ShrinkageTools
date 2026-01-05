@@ -56,6 +56,41 @@ public static class AdditionalTimeValidator
         }
 
         return null;
+
+        /// <summary>
+        /// Vérifie si une absence en cours de création ou de modification
+        /// chevauche une absence existante de l'utilisateur.
+        ///
+        /// Exemple d'absence existante déjà enregistrée :
+        /// - StartDate = 10/01/2026
+        /// - EndDate   = 12/01/2026
+        ///
+        /// Le warning "shrinkage_warning_absence_overlap" est déclenché
+        /// dans les cas suivants :
+        ///
+        /// Cas 1 : Chevauchement par le début
+        /// La date de début de la nouvelle absence se situe à l'intérieur
+        /// d'une absence existante.
+        /// Exemple :
+        /// - Nouvelle absence : 11/01/2026 → 14/01/2026
+        ///
+        /// Cas 2 : Chevauchement par la fin
+        /// La date de fin de la nouvelle absence se situe à l'intérieur
+        /// d'une absence existante.
+        /// Exemple :
+        /// - Nouvelle absence : 08/01/2026 → 11/01/2026
+        ///
+        /// Cas 3 : Chevauchement total
+        /// La nouvelle absence englobe complètement une absence existante.
+        /// Exemple :
+        /// - Nouvelle absence : 09/01/2026 → 13/01/2026
+        ///
+        /// Dans tous ces cas, une absence a déjà été réservée pour la période
+        /// spécifiée et la création ou la modification doit être bloquée.
+        /// </summary>
+
+
+        ///</summary>
     }
 }
 

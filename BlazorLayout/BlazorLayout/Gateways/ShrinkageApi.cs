@@ -14,6 +14,14 @@ using System.Net.Http.Json;
 
 namespace BlazorLayout.Gateways
 {
+    /// <summary>
+    /// Remarque 1 :  Les Appels Get sont toujours protege par Idempotence
+    /// </summary>
+
+
+    /// <summary>
+    /// Remarque 2 :  Les Appels Save , Delete , Update sont mis toujours Executes . Store mis a Jour Localement Apres chaque Appel
+    /// </summary>
     public class ShrinkageApi (IHttpClientFactory httpClientFactory, 
                                TeamsStore teamsStore, 
                                UserShrinkageStore userShrinkageStore,
@@ -36,6 +44,12 @@ namespace BlazorLayout.Gateways
 
         // User Absences Dictionary
         private readonly Dictionary<IReadOnlyList<Guid>, IdempotentApiRequest> ensureGetUserAbsences = new();
+
+
+        /// <summary>
+        ///  Appel Get : EnsureGetUserByEmail
+        /// </summary>
+     
         public ValueTask EnsureGetUserByEmail(string userMail, bool forceRefresh, CancellationToken cancellationToken)
         {
             var request = ensureUserByEmail.GetOrAdd(userMail, () => new IdempotentApiRequest(async token =>
@@ -85,7 +99,9 @@ namespace BlazorLayout.Gateways
             return request.Run(cancellationToken);
         }
 
-        // Ensure Teams
+        /// <summary>
+        ///  Appel Get : EnsureGetTeams
+        /// </summary>
         public ValueTask EnsureGetTeams(string userMail, bool forceRefresh, CancellationToken cancellationToken)
         {
             var request = ensureGetTeams.GetOrAdd(userMail, () => new IdempotentApiRequest(async token =>
@@ -130,7 +146,9 @@ namespace BlazorLayout.Gateways
             return request.Run(cancellationToken);
         }
 
-        // Ensure Get User Daily Summary
+        /// <summary>
+        ///  Appel Get : EnsureGetUserDailySummary
+        /// </summary>
         public ValueTask EnsureGetUserDailySummary(Guid userId, bool forceRefresh, CancellationToken cancellationToken)
         {
             var request = ensureGetUserDailySummary.GetOrAdd(userId, () => new IdempotentApiRequest(async token =>
@@ -183,7 +201,9 @@ namespace BlazorLayout.Gateways
         }
 
 
-        // Ensure get User Shrinkage
+        /// <summary>
+        ///  Appel Get : EnsureGetUserShrinkage
+        /// </summary>
         public ValueTask EnsureGetUserShrinkage(DateOnly shrinkageDate, Guid userId, bool forceRefresh, CancellationToken cancellationToken)
         {
             IdempotentApiRequest CreateRequest(DateOnly date, Guid uid) => new(async token =>
@@ -383,6 +403,10 @@ namespace BlazorLayout.Gateways
                 throw new SaveAbsenceException(ex, correlationId);
             }
         }
+
+        /// <summary>
+        ///  Appel Get : EnsureGetAbsencesByUser
+        /// </summary>
         public ValueTask EnsureGetAbsencesByUser(IReadOnlyList<Guid> userIds, bool forceRefresh, CancellationToken cancellationToken)
         {
             var request = ensureGetUserAbsences.GetOrAdd(userIds, () => new IdempotentApiRequest(async token =>
@@ -479,3 +503,4 @@ namespace BlazorLayout.Gateways
         }
     }
 }
+
