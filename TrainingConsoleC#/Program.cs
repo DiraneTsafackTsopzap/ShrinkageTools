@@ -17,7 +17,8 @@ class Program
     static void Main(string[] args)
     {
         //BasicVariable.Run();
-        FunctionAndMethod.Run();
+        //FunctionAndMethod.Run();
+        ProgrammationObjetOriente.Run();
     }
 
 
