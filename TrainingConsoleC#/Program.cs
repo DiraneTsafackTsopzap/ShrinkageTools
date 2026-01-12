@@ -16,7 +16,8 @@ class Program
 {
     static void Main(string[] args)
     {
-        BasicVariable.Run();
+        //BasicVariable.Run();
+        FunctionAndMethod.Run();
     }
 
 
