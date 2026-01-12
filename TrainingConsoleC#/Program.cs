@@ -16,17 +16,11 @@ class Program
 {
     static void Main(string[] args)
     {
-        //BasicVariable.Run();
-        //FunctionAndMethod.Run();
+        
         ProgrammationObjetOriente.Run();
     }
 
-
-
-    enum Days { Sunday, Monday, Tuesday, Wednesday, Thursday, Friday, Saturday };
-
-    enum Role { Admin = 1, User = 2, Guest = 3 };
-
-
-
 }
+enum Days { Sunday, Monday, Tuesday, Wednesday, Thursday, Friday, Saturday };
+
+enum Role { Admin = 1, User = 2, Guest = 3 };
