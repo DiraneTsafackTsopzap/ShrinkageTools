@@ -5,6 +5,7 @@
 
 using System.Runtime.InteropServices.ComTypes;
 using TrainingConsoleC_;
+using TrainingConsoleC_.Modeles;
 
 /// <summary>
 ///     Ceci est la Version 12.0 de C#
@@ -17,7 +18,7 @@ class Program
     static void Main(string[] args)
     {
         
-        ProgrammationObjetOriente.Run();
+        Inheritance.Run();
     }
 
 }
