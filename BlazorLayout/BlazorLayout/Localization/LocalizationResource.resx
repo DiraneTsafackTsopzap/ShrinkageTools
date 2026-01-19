@@ -198,8 +198,14 @@
   <data name="shrinkage_button_rejected" xml:space="preserve">
     <value>Rejected</value>
   </data>
+  <data name="shrinkage_button_save" xml:space="preserve">
+    <value>Speichern</value>
+  </data>
   <data name="shrinkage_button_transferred" xml:space="preserve">
     <value>Transferred</value>
+  </data>
+  <data name="shrinkage_button_update" xml:space="preserve">
+    <value>Bearbeiten</value>
   </data>
   <data name="shrinkage_delete_absence_message_GDD" xml:space="preserve">
     <value>Should the event - {0} of {1:dd.MM.yyyy} - {2:dd.MM.yyyy} be deleted?</value>
@@ -254,6 +260,12 @@
   </data>
   <data name="shrinkage_label_granted_on" xml:space="preserve">
     <value>Created at</value>
+  </data>
+  <data name="shrinkage_label_paid_time" xml:space="preserve">
+    <value>Bezahlte Stunden</value>
+  </data>
+  <data name="shrinkage_label_paid_time_off" xml:space="preserve">
+    <value>Freizeitausgleich</value>
   </data>
   <data name="shrinkage_label_public_holiday" xml:space="preserve">
     <value>Holiday</value>
@@ -329,6 +341,12 @@
   </data>
   <data name="shrinkage_warning_future_date" xml:space="preserve">
     <value>No bookings may be made for the future.</value>
+  </data>
+  <data name="shrinkage_warning_invalid_time_format" xml:space="preserve">
+    <value>Invalid format (hh:mm). Example: 01:00.</value>
+  </data>
+  <data name="shrinkage_warning_no_teams" xml:space="preserve">
+    <value>No teams loaded</value>
   </data>
   <data name="shrinkage_warning_paid_time_is_zero_D" xml:space="preserve">
     <value>You cannot add activities on {0} as Paid Time is 0.</value>

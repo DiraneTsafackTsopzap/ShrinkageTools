@@ -15,7 +15,15 @@
 
 <div class="d-flex justify-content-end mb-2">
     @* 1- Ajout du Bouton Pr declencher le ShowAddRow *@
-    <AddButton OnClick="@ShowAddRow" Disabled="@(isAddingRow || isEditing)" />
+    @* <AddButton OnClick="@ShowAddRow" Disabled="@(isAddingRow || isEditing)" /> *@
+    <IconButton OnClick="@ShowAddRow" 
+                Disabled="@(isAddingRow || isEditing)"
+                IconSrc="img/add-icon.svg"
+                Title="@Localizer["shrinkage_tooltip_add"]"
+                Alt="Add"
+                CssClass="btn-sm"
+                @attributes="AddIconAttributes" />
+
 </div>
 <EditForm EditContext="formContext" OnValidSubmit="HandleSubmit">
     <Table Grid Items="@GetUserActivities()" CssClass="table-striped mb-0" MaxVisibleRows="7">
@@ -75,21 +83,22 @@
                     </td>
                     <td>
                         <div class="d-flex gap-2 justify-content-center">
-                             <button @onclick="() =>EditActivity(row)"
-                                    disabled="@(isAddingRow  || isEditing )"
-                                    type="button"
-                                    class="btn btn-sm mr-2"
-                                    title="@Localizer["shrinkage_tooltip_edit"]">
-                                <img src="img/edit-icon.svg" class="icon-size" alt="Edit"/>
-                            </button> 
+                            
+                            <IconButton OnClick="@(() => EditActivity(row))"
+                                        Disabled="@(isAddingRow || isEditing)"
+                                        IconSrc="img/edit-icon.svg"
+                                        Title="@Localizer["shrinkage_tooltip_edit"]"
+                                        Alt="Edit"
+                                        CssClass="btn-sm me-2"
+                                        @attributes="AddIconAttributes" />
 
-                             <button @onclick="() =>ConfirmDeleteActivity(row)"
-                                    disabled="@( isAddingRow  || isEditing )"
-                                    type="button"
-                                    class="btn btn-sm"
-                                    title="@Localizer["shrinkage_tooltip_delete"]">
-                                <img src="img/bin-icon.svg" class="icon-size" alt="Delete"/>
-                            </button> 
+                            <IconButton OnClick="@(() => ConfirmDeleteActivity(row))"
+                                        Disabled="@(isAddingRow || isEditing)"
+                                        IconSrc="img/bin-icon.svg"
+                                        Title="@Localizer["shrinkage_tooltip_delete"]"
+                                        Alt="Delete"
+                                        CssClass="btn-sm"
+                                        @attributes="AddIconAttributes" />
                         </div>
                     </td>
                 }
@@ -161,6 +170,12 @@
         public IReadOnlyList<TeamDto> Teams { get; init; } = [];
         // public IReadOnlyList<ActivityType> ActivityTypes { get; init; } = [];
     }
+
+    private Dictionary<string, object> AddIconAttributes = new()
+    {
+        { "style", "width:26px; height:25px;" }
+    };
+
     protected override void OnInitialized()
     {
         base.OnInitialized();

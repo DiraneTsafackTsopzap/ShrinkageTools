@@ -3,6 +3,7 @@ using BlazorLayout.Authentification;
 using BlazorLayout.Extensions;
 using BlazorLayout.Gateways;
 using BlazorLayout.Localization;
+using BlazorLayout.Shared;
 using BlazorLayout.Stores;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Web;
@@ -50,6 +51,8 @@ builder.Services.AddSingleton<UserDailySummaryStore>();
 builder.Services.AddSingleton<UserShrinkageStore>();
 builder.Services.AddSingleton<UserAbsencesStore>();
 builder.Services.AddSingleton<ShrinkageApi>();
+
+builder.Services.AddScoped<ActivityTimerService>();
 
 
 // =======================

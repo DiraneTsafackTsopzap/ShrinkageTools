@@ -141,6 +141,27 @@
                                                              
 
                                 </div> 
+
+                                <Summary PaidTime="@userPaidTime"
+                                         Activities="@UserActivities"
+                                         CurrentOvertime="@userOvertime"
+                                         CurrentVacationTime="@userVacationTime"
+                                         CurrentPaidTimeOff="@userPaidTimeOff"
+                                         ShrinkageDate="@ShrinkageDate"
+                                         UserShrinkage=userShrinkage
+                                         TargetDate="@ShrinkageDate"
+                                         IsReadOnly="@IsReadOnly"
+                                         IsEditing="@isEditing"
+                                         OnWarning="HandleWarning"
+                                         OnGlobalEditChanged="HandleSummaryChanged"
+                                         OnAdjustmentsChanged="@(() => LoadUserShrinkageForDateAsync(ShrinkageDate, false))"
+                                         IsEditingDisabled="@(isAdding || isEditing || isTimerRunning || IsReadOnly)"
+                                         IsUiLocked="@(isAdding || isEditing || isTimerRunning || isEditingActivity || IsReadOnly)"
+                                         
+                                         
+                                         
+                                         
+                                         />
                                 @* <Summary PaidTime="@userPaidTime"
                                          Activities="@UserActivities"
                                          CurrentOvertime="@userOvertime"

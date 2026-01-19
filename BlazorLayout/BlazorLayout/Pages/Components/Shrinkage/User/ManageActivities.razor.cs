@@ -49,6 +49,15 @@ namespace BlazorLayout.Pages.Components.Shrinkage.User
         private SystemDateOnly ShrinkageDate { get; set; } = SystemDateOnly.FromDateTime(DateTime.UtcNow);
         private string DayNameDe => ShrinkageDate.GetDayName();
 
+        private bool IsReadOnly => (displayStatus is StatusDto.Transferred or StatusDto.Approved) || !string.IsNullOrWhiteSpace(errorMessage);
+        private bool isTimerRunning;
+        private bool isSummaryEditing;
+        private bool isAdding;
+        private bool isEditing;
+        private bool isEditingActivity;
+
+        private bool IsUiLocked => isAdding || isEditing || isTimerRunning || isSummaryEditing;
+
         private TimeSpan userPaidTime = TimeSpan.Zero;
         private TimeSpan userOvertime = TimeSpan.Zero;
         private TimeSpan userVacationTime = TimeSpan.Zero;
@@ -105,7 +114,12 @@ namespace BlazorLayout.Pages.Components.Shrinkage.User
             warningMessage = message;
             StateHasChanged();
         }
-
+       
+        private void HandleSummaryChanged(bool isSummaryChanged)
+        {
+            isSummaryEditing = isSummaryChanged;
+            StateHasChanged();
+        }
         private async Task LoadUserShrinkageForDateAsync(SystemDateOnly date, bool forceRefresh)
         {
             try

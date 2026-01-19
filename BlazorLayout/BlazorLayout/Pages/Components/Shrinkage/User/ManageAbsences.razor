@@ -1,6 +1,7 @@
 ﻿@using BlazorLayout.Enums
 @using BlazorLayout.Modeles
 
+@using BlazorLayout.Pages.Components.Shared
 @using BlazorLayout.Pages.Components.Shrinkage.ReusableComponents
 @using BlazorLayout.Pages.Components.Shrinkage.ReusableComponents.Table
 @using BlazorLayout.Shared
@@ -41,8 +42,17 @@ else if (warningMessage is not null)
                                      alt=@Localizer["shrinkage_button_refresh"]>
                             </button>
 
-                            <AddButton OnClick="@AddAbsence"
-                                       Disabled="@(showAddRow || addOrEditAbsence is not null)"/>
+                            @* <AddButton OnClick="@AddAbsence"
+                                       Disabled="@(showAddRow || addOrEditAbsence is not null)"/> *@
+                            <IconButton OnClick="@AddAbsence"
+                                        Disabled="@(showAddRow || addOrEditAbsence is not null)"
+                                        IconSrc="img/add-icon.svg"
+                                        Title="@Localizer["shrinkage_tooltip_add"]"
+                                        Alt="Add"
+                                        CssClass="btn-sm"
+                                        @attributes="AddIconAttributes" />
+
+
                         </div>
                     </div>
                     <EditForm EditContext="formContext" OnValidSubmit="SubmitAddOrEditAsync">

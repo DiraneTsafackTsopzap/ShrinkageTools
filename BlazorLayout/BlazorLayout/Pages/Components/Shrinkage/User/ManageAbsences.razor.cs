@@ -48,7 +48,10 @@ namespace BlazorLayout.Pages.Components.Shrinkage.User
         private const int Timeout = 30_000;
         private string GetRowCreatedBy(string? createdBy) => string.IsNullOrWhiteSpace(createdBy) ? "-" : createdBy;
 
-
+        private Dictionary<string, object> AddIconAttributes = new()
+    {
+        { "style", "width:26px; height:25px;" }
+    };
         private IReadOnlyList<AbsenceDto> GetAbsences =>
         userAbsence == null ? []
                  : showAddRow && addOrEditAbsence is not null ? new[] { addOrEditAbsence }.Concat(userAbsence).ToList()

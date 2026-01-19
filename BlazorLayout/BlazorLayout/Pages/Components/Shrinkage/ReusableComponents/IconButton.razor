@@ -1,0 +1,32 @@
+﻿@using Microsoft.Extensions.Localization
+
+<button type="button" class="btn @CssClass" @onclick="OnClick" disabled="@Disabled" title="@Title">
+    <img src="@IconSrc"  alt="@Alt" @attributes="AdditionalAttributes" />
+</button>
+
+@code {
+
+    [Parameter,EditorRequired]
+    public EventCallback OnClick { get; set; }
+
+    [Parameter]
+    public bool Disabled { get; set; }
+
+    [Parameter,EditorRequired]
+    public string IconSrc { get; set; } = string.Empty;
+
+    [Parameter,EditorRequired]
+    public string Title { get; set; } = string.Empty;
+
+    [Parameter,EditorRequired]
+    public string Alt { get; set; } = string.Empty;
+
+    [Parameter,EditorRequired]
+    public string CssClass { get; set; } = "btn-sm";
+
+    [Parameter(CaptureUnmatchedValues = true)]
+    public Dictionary<string, object>? AdditionalAttributes { get; set; }
+
+
+
+}
