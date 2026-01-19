@@ -6,6 +6,7 @@
 using System.Runtime.InteropServices.ComTypes;
 using TrainingConsoleC_;
 using TrainingConsoleC_.Modeles;
+using TrainingConsoleC_.Modeles.Abstractions;
 
 /// <summary>
 ///     Ceci est la Version 12.0 de C#
@@ -17,8 +18,9 @@ class Program
 {
     static void Main(string[] args)
     {
-        
-        Inheritance.Run();
+
+        //Inheritance.Run();
+        AbstractionDemo.Run();
     }
 
 }
