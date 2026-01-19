@@ -15,14 +15,14 @@
 
 <div class="d-flex justify-content-end mb-2">
     @* 1- Ajout du Bouton Pr declencher le ShowAddRow *@
-    @* <AddButton OnClick="@ShowAddRow" Disabled="@(isAddingRow || isEditing)" /> *@
-    <IconButton OnClick="@ShowAddRow" 
+  
+     <IconButton OnClick="@ShowAddRow" 
                 Disabled="@(isAddingRow || isEditing)"
                 IconSrc="img/add-icon.svg"
                 Title="@Localizer["shrinkage_tooltip_add"]"
                 Alt="Add"
                 CssClass="btn-sm"
-                @attributes="AddIconAttributes" />
+                @attributes="AddIconAttributes" /> 
 
 </div>
 <EditForm EditContext="formContext" OnValidSubmit="HandleSubmit">

@@ -33,24 +33,24 @@ else if (warningMessage is not null)
                 <div class="card-body">
                     <div class="d-flex justify-content-end align-items-center mb-3">
                         <div class="d-flex align-items-center">
-                            <button type="button" class="btn"
-                                    disabled="@(showAddRow || addOrEditAbsence is not null)"
-                                    title=@Localizer["shrinkage_tooltip_refresh"]
-                                    @onclick="Refresh">
-                                <img src="img/refresh.svg"
-                                     style="width:25px ; height:25px"
-                                     alt=@Localizer["shrinkage_button_refresh"]>
-                            </button>
+                         
+                            <IconButton OnClick="Refresh"
+                                        IconSrc="img/refresh.svg"
+                                        Title="@Localizer["shrinkage_tooltip_refresh"]"
+                                        Alt="@Localizer["shrinkage_button_refresh"]"
+                                        Disabled="@(showAddRow || addOrEditAbsence is not null)"
+                                        ButtonType="button"
+                                        CssClass="btn"
+                                        @attributes="IconAttributes" />
 
-                            @* <AddButton OnClick="@AddAbsence"
-                                       Disabled="@(showAddRow || addOrEditAbsence is not null)"/> *@
+                        
                             <IconButton OnClick="@AddAbsence"
                                         Disabled="@(showAddRow || addOrEditAbsence is not null)"
                                         IconSrc="img/add-icon.svg"
                                         Title="@Localizer["shrinkage_tooltip_add"]"
                                         Alt="Add"
                                         CssClass="btn-sm"
-                                        @attributes="AddIconAttributes" />
+                                        @attributes="IconAttributes" />
 
 
                         </div>
@@ -110,15 +110,24 @@ else if (warningMessage is not null)
                                         <td class="text-muted">@DateOnly.FromDateTime(addOrEditAbsence!.CreatedAt).ToShortDateString()</td>
                                         <td>
                                             <div class="d-flex gap-2 justify-content-center">
-                                                <button type="submit" class="btn btn-sm"
-                                                        title="@Localizer["shrinkage_tooltip_save"]">
-                                                    <img src="img/save-icon.svg" class="save-icon-size" alt="Save"/>
-                                                </button>
-                                                <button type="button" class="btn btn-sm"
-                                                        title="@Localizer["shrinkage_tooltip_cancel"]"
-                                                        @onclick="CancelEdit">
-                                                    <img src="img/cross-icon.svg" class="icon-size" alt="Cancel"/>
-                                                </button>
+                                              
+                                                <IconButton 
+                                                            
+                                                            IconSrc="img/save-icon.svg"
+                                                            Title="@Localizer["shrinkage_tooltip_save"]"
+                                                            Alt="Save"
+                                                            ButtonType="submit"
+                                                            CssClass="btn btn-sm"
+                                                            @attributes="SaveIconSizeAttributes" />
+
+                                                <IconButton IconSrc="img/cross-icon.svg"
+                                                            Title="@Localizer["shrinkage_tooltip_save"]"
+                                                            Alt="Save"
+                                                            ButtonType="button"
+                                                            OnClick="CancelEdit"
+                                                            CssClass="btn btn-sm"
+                                                            @attributes="IconAttributes" />
+                                               
                                             </div>
                                         </td> 
                                     }
@@ -132,18 +141,27 @@ else if (warningMessage is not null)
                                         <td>@DateOnly.FromDateTime(row.CreatedAt).ToShortDateString()</td>
                                         <td>
                                             <div class="d-flex gap-2 justify-content-center">
-                                                <button type="button" class="btn btn-sm"
-                                                        title="@Localizer["shrinkage_tooltip_edit"]"
-                                                        disabled="@(IsAbsenceInPast(row) || showAddRow || addOrEditAbsence is not null)"
-                                                        @onclick="() => StartEdit(row)">
-                                                    <img src="img/edit-icon.svg" class="icon-size" alt="Edit"/>
-                                                </button>
-                                                <button type="button" class="btn btn-sm"
-                                                        title="@Localizer["shrinkage_tooltip_delete"]"
-                                                        disabled="@(IsAbsenceInPast(row) || showAddRow || addOrEditAbsence is not null)"
-                                                        @onclick="() => ShowDelete(row)">
-                                                    <img src="img/bin-icon.svg" class="icon-size" alt="Delete"/>
-                                                </button>
+                                               
+
+                                                <IconButton OnClick="() => StartEdit(row)"
+                                                            Disabled="@(IsAbsenceInPast(row) || showAddRow || addOrEditAbsence is not null)"
+                                                            IconSrc="img/edit-icon.svg"
+                                                            Title="@Localizer["shrinkage_tooltip_edit"]"
+                                                            Alt="Edit"
+                                                            ButtonType="button"
+                                                            CssClass="btn btn-sm"
+                                                            @attributes="IconSizeAttributes" />
+
+
+
+                                                <IconButton OnClick="() => ShowDelete(row)"
+                                                            Disabled="@(IsAbsenceInPast(row) || showAddRow || addOrEditAbsence is not null)"
+                                                            IconSrc="img/bin-icon.svg"
+                                                            Title="@Localizer["shrinkage_tooltip_delete"]"
+                                                            Alt="Delete"
+                                                            ButtonType="button"
+                                                            CssClass="btn btn-sm"
+                                                            @attributes="IconSizeAttributes" />
                                             </div>
                                         </td>
                                     }

@@ -2,3 +2,6 @@
     width: 26px;
     height: 25px;
 }
+.btn:hover {
+    background-color: lightgrey !important;
+}

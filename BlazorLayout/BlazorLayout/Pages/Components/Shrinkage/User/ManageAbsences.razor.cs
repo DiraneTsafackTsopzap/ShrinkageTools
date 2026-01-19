@@ -48,10 +48,22 @@ namespace BlazorLayout.Pages.Components.Shrinkage.User
         private const int Timeout = 30_000;
         private string GetRowCreatedBy(string? createdBy) => string.IsNullOrWhiteSpace(createdBy) ? "-" : createdBy;
 
-        private Dictionary<string, object> AddIconAttributes = new()
+
+
+        private Dictionary<string, object> IconAttributes = new()
     {
         { "style", "width:26px; height:25px;" }
     };
+
+        private Dictionary<string, object> IconSizeAttributes = new()
+    {
+        { "style", "width:25px; height:25px;" }
+    };
+
+        private Dictionary<string, object> SaveIconSizeAttributes = new()
+        {
+            { "style", "width:20px; height:20px;" }
+        };
         private IReadOnlyList<AbsenceDto> GetAbsences =>
         userAbsence == null ? []
                  : showAddRow && addOrEditAbsence is not null ? new[] { addOrEditAbsence }.Concat(userAbsence).ToList()
@@ -333,7 +345,7 @@ namespace BlazorLayout.Pages.Components.Shrinkage.User
             /// <summary>
             /// Ajout d'une Absence
             /// </summary>
-            
+
             if (showAddRow && addOrEditAbsence is not null)
             {
                 ValidateAbsenceRequest(addOrEditAbsence);
@@ -441,7 +453,7 @@ namespace BlazorLayout.Pages.Components.Shrinkage.User
                 ///<summary>
                 /// L'erreur ci est declenche si l'user ne choisit aucune Absence
                 /// </summary>
- 
+
                 warningMessage = Localizer["shrinkage_select_absence_type"];
             }
 
@@ -450,7 +462,7 @@ namespace BlazorLayout.Pages.Components.Shrinkage.User
                 ///<summary>
                 /// L'erreur ci est declenche si J'entre Par Exemple StartDate : 15.01.2026 et EndDate : 10.01.2026
                 /// </summary>
-                
+
                 warningMessage = Localizer["shrinkage_absence_date_to_before_from"];
             }
             else

@@ -1,6 +1,7 @@
 ﻿
 @using BlazorLayout.Enums
 @using BlazorLayout.Modeles
+@using BlazorLayout.Pages.Components.Shrinkage.ReusableComponents
 @using BlazorLayout.StateManagement
 @using BlazorLayout.Stores
 @using BlazorLayout.Utilities
@@ -84,17 +85,22 @@ else
 }
 <td>
     <div class="d-flex gap-2 justify-content-center">
-        <button type="submit"
-                class="btn me-2"
-                title="@Localizer["shrinkage_tooltip_save"]">
-            <img src="img/save-icon.svg" class="save-icon-size" alt="Save" />
-        </button>
-        <button type="button"
-                class="btn"
-                title="@Localizer["shrinkage_tooltip_cancel"]"
-                @onclick="HandleCancel">
-            <img src="img/cross-icon.svg" class="icon-size" alt="Cancel" />
-        </button>
+        
+        <IconButton ButtonType="submit"
+                    IconSrc="img/save-icon.svg"
+                    Title="@Localizer["shrinkage_tooltip_save"]"
+                    Alt="Save"
+                    CssClass="btn me-2"
+                    @attributes="SaveIconSizeAttributes" />
+
+        <IconButton OnClick="HandleCancel"
+                    IconSrc="img/cross-icon.svg"
+                    Title="@Localizer["shrinkage_tooltip_cancel"]"
+                    Alt="Cancel"
+                    ButtonType="button"
+                    CssClass="btn"
+                    @attributes="AddIconAttributes" />
+
     </div>
 </td>
 
@@ -168,6 +174,16 @@ else
         OnWarning(null);
         OnCancel();
     }
+
+    private Dictionary<string, object> AddIconAttributes = new()
+    {
+        { "style", "width:26px; height:25px;" }
+    };
+
+    private Dictionary<string, object> SaveIconSizeAttributes = new()
+    {
+        { "style", "width:20px; height:20px;" }
+    };
 
     protected override void OnInitialized()
     {
