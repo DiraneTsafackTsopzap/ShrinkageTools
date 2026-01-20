@@ -261,6 +261,9 @@
   <data name="shrinkage_label_granted_on" xml:space="preserve">
     <value>Created at</value>
   </data>
+  <data name="shrinkage_label_over_time" xml:space="preserve">
+    <value>Überstunden</value>
+  </data>
   <data name="shrinkage_label_paid_time" xml:space="preserve">
     <value>Bezahlte Stunden</value>
   </data>

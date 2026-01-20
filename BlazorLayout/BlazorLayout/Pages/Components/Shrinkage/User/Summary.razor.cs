@@ -201,6 +201,28 @@ namespace BlazorLayout.Pages.Components.Shrinkage.User;
         isEditingVacationTime = false;
         OnGlobalEditChanged(true);
     }
+
+    private void StartEditOvertime()
+    {
+        OnWarning(null);
+        if (IsEditingDisabled || IsReadOnly) return;
+        if (UnfinishedActivityExist()) return;
+        isEditingPaidTimeOff = false;
+        isEditingOvertime = true;
+        isEditingVacationTime = false;
+        OnGlobalEditChanged(true);
+    }
+
+    private void StartEditVacationTime()
+    {
+        OnWarning(null);
+        if (IsEditingDisabled || IsReadOnly) return;
+        if (UnfinishedActivityExist()) return;
+        isEditingPaidTimeOff = false;
+        isEditingOvertime = false;
+        isEditingVacationTime = true;
+        OnGlobalEditChanged(true);
+    }
     private TimeSpan GetAdjustedRemainingTime()
     {
         return TimeCalculator.GetRemainingTime(PaidTime, CurrentOvertime, CurrentVacationTime, CurrentPaidTimeOff, Activities);
@@ -254,6 +276,63 @@ namespace BlazorLayout.Pages.Components.Shrinkage.User;
             OnWarning(errorMessage);
         }
         catch (OperationCanceledException) when (IsDisposing) { }
+        catch (Exception ex)
+        {
+            errorMessage = Localizer["shrinkage_error_save_user_daily_value"];
+            if (ex.InnerException is HttpRequestException ex2 && ex2.GetReasonMessage(ex) is { } reason)
+                errorMessage += " " + reason;
+            OnWarning(errorMessage);
+        }
+    }
+
+    private async Task SaveOvertimeAsync()
+    {
+        errorMessage = string.Empty;
+        StateHasChanged();
+        if (!TimeSpan.TryParse(overtimeInput, out var newOvertime))
+        {
+            errorMessage = Localizer["shrinkage_warning_invalid_time_format"];
+            OnWarning(errorMessage);
+            OnGlobalEditChanged(false);
+            StateHasChanged();
+            return;
+        }
+
+        if (!AdditionalTimeValidator.CheckIfOverTimeBeModified(PaidTime, newOvertime, out var err))
+        {
+            errorMessage = err;
+            OnWarning(errorMessage);
+            OnGlobalEditChanged(false);
+            return;
+        }
+
+        var request = new SaveUserDailyValuesRequest_M
+        {
+            CorrelationId = Guid.NewGuid(),
+            UserId = State.CurrentUser!.UserId,
+            TeamId = State.CurrentUser!.TeamId!.Value,
+            ShrinkageDate = TargetDate,
+            Overtime = newOvertime,
+        };
+        try
+        {
+           // await ShrinkageApi.SaveUserDailyValuesForUserAsync(request, TimeoutToken(Timeout));
+            CurrentOvertime = newOvertime;
+            isEditingOvertime = false;
+            overtimeInput = CurrentOvertime.FormatTimeSpanToHhMm();
+            await OnAdjustmentsChanged();
+            OnGlobalEditChanged(false);
+            StateHasChanged();
+        }
+        catch (ConflictException ex)
+        {
+            errorMessage = Localizer["shrinkage_error_save_user_daily_value_conflict"];
+            if (ex.InnerException is HttpRequestException ex2 && ex2.GetReasonMessage(ex) is { } reason)
+                errorMessage += " " + reason;
+            OnWarning(errorMessage);
+        }
+        catch (OperationCanceledException) when (IsDisposing) { }
+
         catch (Exception ex)
         {
             errorMessage = Localizer["shrinkage_error_save_user_daily_value"];

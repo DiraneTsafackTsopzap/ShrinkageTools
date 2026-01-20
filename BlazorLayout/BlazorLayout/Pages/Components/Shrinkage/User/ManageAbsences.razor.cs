@@ -11,8 +11,7 @@ using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.Extensions.Localization;
 using SystemDateOnly = System.DateOnly;
-namespace BlazorLayout.Pages.Components.Shrinkage.User
-{
+namespace BlazorLayout.Pages.Components.Shrinkage.User;
     public sealed partial class ManageAbsences
     {
         [Inject]
@@ -514,7 +513,7 @@ namespace BlazorLayout.Pages.Components.Shrinkage.User
         }
 
     }
-}
+
 
 // La clé à comprendre : les crochets [ ... ] dans le code C# sont utilisés pour définir des attributs.
 // [State.User.UserId] est equivalent de  new List<Guid> { State.User.UserId }
