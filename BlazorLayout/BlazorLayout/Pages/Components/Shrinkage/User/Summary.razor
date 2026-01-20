@@ -1,4 +1,5 @@
-﻿@using BlazorLayout.Shared
+﻿@using BlazorLayout.Pages.Components.Shrinkage.ReusableComponents
+@using BlazorLayout.Shared
 @inherits StatefulComponent<Summary.StateT>
 
 
@@ -36,72 +37,52 @@
 
             <div class="my-4"></div>
 
-            <div class="form-group row align-items-center mb-2">
-               
 
-                <div class="col-auto" style="width: 220px;">
-                    <div class="d-flex justify-content-end">
-                        <span class="me-1">
-                            @Localizer["shrinkage_label_paid_time"]
-                        </span>
-                        <span style="width: 10px; text-align: center;">:</span>
-                    </div>
-                </div>
-                <div class="col-auto">
-                    <input id="paid-time" type="text" 
-                    class="form-control form-control-sm text-center"
-                           style="width: 80px;"
-                    value="@PaidTime.FormatTimeSpanToHhMm()" readonly />
-                </div>
-            </div>
 
-            <!-- PaidTimeOff -->
-            <div class="row align-items-center mb-2 flex-nowrap">
+            @* Bezahlen Stunden *@
+           <AlignedTimeRow Label="@Localizer["shrinkage_label_paid_time"]">
 
-                <div class="col-auto" style="width: 220px;">
-                    <div class="d-flex justify-content-end">
-                        <span class="me-1">
-                            @Localizer["shrinkage_label_paid_time_off"]
-                        </span>
-                        <span style="width: 10px; text-align: center;">:</span>
-                    </div>
-                </div>
+                        <InputContent>
+                               <TimeInput Value="@PaidTime.FormatTimeSpanToHhMm()" ReadOnly="true" />
+                        </InputContent>
 
-                <div class="col-auto">
-                    <input id="paid-time-off"
-                           class="form-control form-control-sm text-center"
-                           style="width: 80px;"
-                           placeholder="hh:mm"
-                           @bind-value="PaidTimeOffInput"
-                           @bind-value:event="oninput"
-                           @onblur="FormatPaidTimeOffOnBlur"
-                           maxlength="5"
-                           inputmode="numeric"
-                           autocomplete="off"
-                           readonly="@(IsEditingDisabled || !isEditingPaidTimeOff || IsReadOnly)" />
-                </div>
+           </AlignedTimeRow>
 
-                <div class="col-auto d-flex align-items-center">
-                    <button type="button"
-                            class="btn btn-outline-secondary btn-sm me-2"
-                            data-bs-toggle="popover"
-                            data-bs-placement="right"
-                            disabled="@(IsUiLocked || IsTimerActive)"
-                            data-content-id="popover-paid-time-off">
-                        ?
-                    </button>
+
+
+            @* Freizeitausgleich *@
+            <AlignedTimeRow Label="@Localizer["shrinkage_label_paid_time_off"]">
+
+                <InputContent>
+                       <TimeInput Id="paid-time-off"
+                                  Placeholder="hh:mm"
+                                  Value="@PaidTimeOffInput"
+                                  ReadOnly="@(IsEditingDisabled || !isEditingPaidTimeOff || IsReadOnly)"
+                                  OnInput="@(e => PaidTimeOffInput = e.Value?.ToString() ?? string.Empty)"
+                                  OnBlur="FormatPaidTimeOffOnBlur" />
+                </InputContent>
+
+                <ActionsContent>
+                  
+                    <ButtonPopover Disabled="@(IsUiLocked || IsTimerActive)"
+                                   Placement="right"
+                                   data-content-id="popover-paid-time-off" />
+
 
                     @if (!isEditingPaidTimeOff)
                     {
                         <button type="button"
-                                class="btn btn-outline-dark btn-sm fixed-btn"
-                                disabled="@(IsUiLocked || IsEditingDisabled || AnySummaryEditing || IsTimerActive)"
-                                @onclick="StartEditPaid">
+                                 class="btn btn-outline-dark btn-sm fixed-btn"
+                                 disabled="@(IsUiLocked || IsEditingDisabled || AnySummaryEditing || IsTimerActive)"
+                                 @onclick="StartEditPaid">
                             @Localizer["shrinkage_button_update"]
                         </button>
+
+                      
                     }
                     else
                     {
+
                         <button type="button"
                                 class="btn btn-success btn-sm fixed-btn"
                                 disabled="@(IsUiLocked || IsEditingDisabled)"
@@ -109,44 +90,28 @@
                             @Localizer["shrinkage_button_save"]
                         </button>
                     }
-                </div>
+                </ActionsContent>
 
-            </div>
+            </AlignedTimeRow>
+
 
 
             <!-- Overtime -->
-            <div class="row align-items-center mb-2 flex-nowrap">
+            <AlignedTimeRow Label="@Localizer["shrinkage_label_over_time"]">
 
-                <div class="col-auto" style="width: 220px;">
-                    <div class="d-flex justify-content-end">
-                        <span class="me-1">
-                            @Localizer["shrinkage_label_over_time"]
-                        </span>
-                        <span style="width: 10px; text-align: center;">:</span>
-                    </div>
-                </div>
+                <InputContent>
+                      <TimeInput Id="overtime"
+                               Placeholder="hh:mm"
+                               Value="@OvertimeInput"
+                               ReadOnly="@(IsEditingDisabled || !isEditingOvertime || IsReadOnly)"
+                               OnInput="@(e => OvertimeInput = e.Value?.ToString() ?? string.Empty)"
+                               OnBlur="FormatOvertimeOnBlur" />
+                </InputContent>
 
-                <div class="col-auto">
-                    <input id="paid-time-off"
-                           class="form-control form-control-sm text-center"
-                           style="width: 80px;"
-                           placeholder="hh:mm"
-                           @bind-value="OvertimeInput"
-                           @bind-value:event="oninput"
-                           @onblur="FormatOvertimeOnBlur"
-                           maxlength="5"
-                           inputmode="numeric"
-                           autocomplete="off"
-                           readonly="@(IsEditingDisabled || !isEditingOvertime || IsReadOnly)" />
-                </div>
-
-                <div class="col-auto d-flex align-items-center">
+                <ActionsContent>
                     <button type="button"
                             class="btn btn-outline-secondary btn-sm me-2"
-                            data-bs-toggle="popover"
-                            data-bs-placement="right"
-                            disabled="@(IsUiLocked || IsTimerActive)"
-                            data-content-id="popover-paid-time-off">
+                            disabled="@(IsUiLocked || IsTimerActive)">
                         ?
                     </button>
 
@@ -168,9 +133,10 @@
                             @Localizer["shrinkage_button_save"]
                         </button>
                     }
-                </div>
+                </ActionsContent>
 
-            </div>
+            </AlignedTimeRow>
+
 
 
         </div>

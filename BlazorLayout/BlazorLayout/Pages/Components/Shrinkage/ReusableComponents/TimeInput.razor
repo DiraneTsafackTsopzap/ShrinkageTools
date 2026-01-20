@@ -1,0 +1,51 @@
+﻿<input type="text"
+       class="form-control form-control-sm text-center"
+       style="width: @Width;"
+       id="@Id"
+       placeholder="@Placeholder"
+       value="@Value"
+       @oninput="OnInput"
+       @onblur="OnBlur"
+       maxlength="@MaxLength"
+       inputmode="@InputMode"
+       autocomplete="@AutoComplete"
+       readonly="@ReadOnly" />
+
+@code {
+
+    // ---- Apparence / attributs ----
+
+    [Parameter]
+    public string Width { get; set; } = "80px";
+
+    [Parameter]
+    public string? Id { get; set; }
+
+    [Parameter]
+    public string? Placeholder { get; set; }
+
+    [Parameter]
+    public int MaxLength { get; set; } = 5;
+
+    [Parameter]
+    public string InputMode { get; set; } = "numeric";
+
+    [Parameter]
+    public string AutoComplete { get; set; } = "off";
+
+    [Parameter]
+    public bool ReadOnly { get; set; }
+
+    // ---- Valeur ----
+
+    [Parameter]
+    public string? Value { get; set; }
+
+    // Callback si tu veux gérer le oninput depuis le parent
+    [Parameter]
+    public EventCallback<ChangeEventArgs> OnInput { get; set; }
+
+    // Callback pour onblur (facultatif)
+    [Parameter]
+    public EventCallback<FocusEventArgs> OnBlur { get; set; }
+}

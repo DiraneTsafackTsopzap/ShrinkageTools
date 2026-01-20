@@ -107,6 +107,11 @@ namespace BlazorLayout.Pages.Components.Shrinkage.User;
         Teams = TeamsStore.Teams,
     };
 
+    private Dictionary<string, object> StylesAttributes { get; set; } = new()
+    {
+        ["style"] = "min-width: 90px; text-align: center;"
+    };
+
 
     private string PaidTimeOffInput
     {

@@ -5,9 +5,13 @@
             title="@Title"
             disabled="@(Disabled ? "disabled" : null)"
             @onclick="OnClick">
+
         <img src="@IconSrc"
              alt="@Alt"
+             class="me-1"
              @attributes="AdditionalAttributes" />
+
+        @ChildContent
     </button>
 }
 else
@@ -16,9 +20,13 @@ else
             class="btn @CssClass"
             title="@Title"
             disabled="@(Disabled ? "disabled" : null)">
+
         <img src="@IconSrc"
              alt="@Alt"
+             class="me-1"
              @attributes="AdditionalAttributes" />
+
+        @ChildContent
     </button>
 }
 
@@ -28,22 +36,26 @@ else
     public EventCallback OnClick { get; set; }
 
     [Parameter]
-    public string ButtonType { get; set; } = "button"; // ou "submit"
+    public string ButtonType { get; set; } = "button";
 
     [Parameter]
-    public bool Disabled { get; set; } = false;
+    public bool Disabled { get; set; }
 
     [Parameter, EditorRequired]
     public string IconSrc { get; set; } = string.Empty;
 
-    [Parameter, EditorRequired]
+    [Parameter]
     public string Title { get; set; } = string.Empty;
 
-    [Parameter, EditorRequired]
+    [Parameter]
     public string Alt { get; set; } = string.Empty;
 
-    [Parameter, EditorRequired]
+    [Parameter]
     public string CssClass { get; set; } = "btn-sm";
+
+    // 🔑 IMPORTANT
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
 
     [Parameter(CaptureUnmatchedValues = true)]
     public Dictionary<string, object>? AdditionalAttributes { get; set; }

@@ -1,0 +1,40 @@
+﻿<div class="row align-items-center mb-2 flex-nowrap">
+
+    <!-- Label + : -->
+    <div class="col-auto" style="width: 220px;">
+        <div class="d-flex justify-content-end">
+            <span class="me-1">
+                @Label
+            </span>
+            <span style="width: 10px; text-align: center;">:</span>
+        </div>
+    </div>
+
+    <!-- Input -->
+    <div class="col-auto">
+        @InputContent
+    </div>
+
+    <!-- Optional actions ( ? , buttons, etc. ) -->
+    @if (ActionsContent != null)
+    {
+        <div class="col-auto d-flex align-items-center">
+            @ActionsContent
+        </div>
+    }
+
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public string Label { get; set; } = default!;
+
+    // Contenu libre pour l'input
+    [Parameter, EditorRequired]
+    public RenderFragment InputContent { get; set; } = default!;
+
+    // Contenu libre pour ?, boutons, etc. (facultatif)
+    [Parameter]
+    public RenderFragment? ActionsContent { get; set; }
+}
+

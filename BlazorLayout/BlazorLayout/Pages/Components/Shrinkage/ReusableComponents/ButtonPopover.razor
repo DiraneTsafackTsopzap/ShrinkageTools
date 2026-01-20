@@ -1,0 +1,27 @@
+﻿<button type="button"
+        class="btn btn-outline-secondary btn-sm me-2"
+        data-bs-toggle="popover"
+        data-bs-placement="@Placement"
+        disabled="@Disabled"
+        @attributes="AdditionalAttributes">
+    @Text
+</button>
+
+@code {
+
+    // Texte affiché dans le bouton (par défaut "?")
+    [Parameter]
+    public string Text { get; set; } = "?";
+
+    // Position du popover : right, left, top, bottom
+    [Parameter]
+    public string Placement { get; set; } = "right";
+
+    // Etat disabled
+    [Parameter]
+    public bool Disabled { get; set; }
+
+    // Pour passer des attributs supplémentaires (data-content-id, etc.)
+    [Parameter(CaptureUnmatchedValues = true)]
+    public Dictionary<string, object>? AdditionalAttributes { get; set; }
+}
