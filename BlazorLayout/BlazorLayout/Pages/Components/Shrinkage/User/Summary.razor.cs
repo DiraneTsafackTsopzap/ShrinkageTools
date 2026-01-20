@@ -8,6 +8,7 @@ using BlazorLayout.Stores;
 using BlazorLayout.Validators;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Localization;
+using Microsoft.JSInterop;
 using SystemDateOnly = System.DateOnly;
 
 
@@ -51,6 +52,9 @@ namespace BlazorLayout.Pages.Components.Shrinkage.User;
     [Parameter, EditorRequired]
     public bool IsEditing { get; set; }
 
+    [Inject]
+    private IJSRuntime JsRuntime { get; init; } = null!;
+
 
     [Parameter, EditorRequired]
     public UserShrinkageDto? UserShrinkage { get; set; }
@@ -68,6 +72,7 @@ namespace BlazorLayout.Pages.Components.Shrinkage.User;
     private bool isEditingPaidTimeOff;
     private bool isEditingOvertime;
     private bool isEditingVacationTime;
+    private bool popoverInitialized;
 
     [Parameter, EditorRequired]
     public Action<bool> OnGlobalEditChanged { get; set; }
@@ -359,6 +364,30 @@ namespace BlazorLayout.Pages.Components.Shrinkage.User;
     }
 
 
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JsRuntime.InvokeVoidAsync("eval", @"
+            const triggers = document.querySelectorAll('[data-bs-toggle=""popover""]');
+
+triggers.forEach(el => {
+    const contentId = el.getAttribute('data-content-id');
+    const contentEl = contentId ? document.getElementById(contentId) : null;
+    const content = contentEl ? contentEl.innerHTML : '';
+    const title = el.getAttribute('title') || '';
+
+    new bootstrap.Popover(el, {
+        trigger: 'hover',
+        html: true,
+        container: 'body',
+        title: title,
+        content: content
+    });
+});
+");
+        }
+    }
 
 
 }

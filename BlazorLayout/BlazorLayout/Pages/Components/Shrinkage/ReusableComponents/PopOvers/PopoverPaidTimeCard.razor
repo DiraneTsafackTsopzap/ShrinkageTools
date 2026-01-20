@@ -1,0 +1,53 @@
+﻿@if (Model is not null && !string.IsNullOrWhiteSpace(Model.Id))
+{
+    <div id="@Model.Id" class="d-none">
+        <div class="card shadow-sm bg-white" style="max-width: 600px;">
+
+            <div class="card-body p-3">
+
+                @if (!string.IsNullOrWhiteSpace(Model.Title))
+                {
+                    <h6 class="fw-bold mb-2 text-primary">
+                        @Model.Title
+                    </h6>
+                }
+
+                @if (!string.IsNullOrWhiteSpace(Model.Description))
+                {
+                    <p class="mb-2" style="white-space: normal;">
+                        @Model.Description
+                    </p>
+                }
+
+                @if (Model.Items?.Any() == true)
+                {
+                    <ul class="mb-3 ps-3">
+                        @foreach (var item in Model.Items)
+                        {
+                            <li style="white-space: normal;">@item</li>
+                        }
+                    </ul>
+                }
+
+                @if (!string.IsNullOrWhiteSpace(Model.Warning))
+                {
+                    <p class="text-danger fw-bold mb-0" style="white-space: normal;">
+                        @((MarkupString)Model.Warning)
+                    </p>
+                }
+
+            </div>
+        </div>
+    </div>
+}
+
+
+
+@code {
+
+    [Parameter, EditorRequired]
+    public PopoverCardModel? Model { get; set; }
+
+}
+
+
