@@ -13,6 +13,10 @@ namespace BlazorLayout.Shared
         {
             return timeSpan.ToString(@"hh\:mm");
         }
+        public static string FormatTimeSpanToHhMmSs(TimeSpan timeSpan)
+        {
+            return timeSpan.ToString(@"hh\:mm\:ss");
+        }
 
         public static DateTimeOffset ConvertToGermanLocalTime(this DateTimeOffset dateTime)
         {

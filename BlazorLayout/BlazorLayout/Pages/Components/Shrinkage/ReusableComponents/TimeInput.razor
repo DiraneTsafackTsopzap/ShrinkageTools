@@ -1,5 +1,5 @@
 ﻿<input type="text"
-       class="form-control form-control-sm text-center"
+       class="form-control form-control-sm text-center @CssClass"
        style="width: @Width;"
        id="@Id"
        placeholder="@Placeholder"
@@ -20,6 +20,10 @@
 
     [Parameter]
     public string? Id { get; set; }
+
+    [Parameter]
+    public string? CssClass { get; set; } 
+
 
     [Parameter]
     public string? Placeholder { get; set; }

@@ -153,36 +153,13 @@
                                          IsReadOnly="@IsReadOnly"
                                          IsEditing="@isEditing"
                                          OnWarning="HandleWarning"
+                                         OnTimerStateChanged="HandleTimerStateChanged"
                                          OnGlobalEditChanged="HandleSummaryChanged"
                                          OnAdjustmentsChanged="@(() => LoadUserShrinkageForDateAsync(ShrinkageDate, false))"
                                          IsEditingDisabled="@(isAdding || isEditing || isTimerRunning || IsReadOnly)"
                                          IsUiLocked="@(isAdding || isEditing || isTimerRunning || isEditingActivity || IsReadOnly)"
-                                         
-                                         
-                                         
-                                         
-                                         />
-                                @* <Summary PaidTime="@userPaidTime"
-                                         Activities="@UserActivities"
-                                         CurrentOvertime="@userOvertime"
-                                         CurrentVacationTime="@userVacationTime"
-                                         CurrentPaidTimeOff="@userPaidTimeOff"
-                                         ShrinkageDate="@ShrinkageDate"
-                                         DayName="@DayNameDe"
-                                         TargetDate="@ShrinkageDate"
-                                         IsReadOnly="@IsReadOnly"
-                                         OnTimerStateChanged="HandleTimerStateChanged"
-                                         IsAdding="@isAdding"
-                                         IsEditing="@isEditing"
-                                         Comment="@comment"
-                                         OnSave="HandleSaveActivity"
-                                         OnWarning="HandleWarning"
-                                         IsUiLocked="@(isAdding || isEditing || isTimerRunning || isEditingActivity || IsReadOnly)"
-                                         IsEditingDisabled="@(isAdding || isEditing || isTimerRunning || IsReadOnly)"
-                                         OnGlobalEditChanged="HandleSummaryChanged"
-                                         UserShrinkage=userShrinkage
-                                         OnAdjustmentsChanged="@(() => LoadUserShrinkageForDateAsync(ShrinkageDate, false))"/>
- *@
+                                         OnSave="HandleSaveActivity" />
+      
                                 <div class="d-flex justify-content-end mt-3">
                                     <button 
                                              class="btn btn-outline-dark fixed-btn">
@@ -200,37 +177,7 @@
 
 @code
 {
-    // private async Task ShowSaveDailyValueConfirmation(UserDailySummaryDto row)
-    // {
-    //     SelectRow(row);
-    //     var title = string.Empty;
-    //     var message = string.Empty;
-
-    //     if (row.Date.DayOfWeek == DayOfWeek.Saturday ||
-    //         row.Date.DayOfWeek == DayOfWeek.Sunday ||
-    //         row.PublicHoliday != null)
-    //     {
-    //         string dayType = row.Date.GetDayName();
-    //         if (row.PublicHoliday != null)
-    //             dayType = Localizer["shrinkage_label_public_holiday"];
-
-    //         title = Localizer["shrinkage_add_daily_value_title_S", dayType];
-    //         message = Localizer["shrinkage_add_daily_value_message"];
-    //     }
-    //     else if (row.AbsenceType != AbsenceType.Unspecified)
-    //     {
-    //         title = Localizer["shrinkage_add_daily_value_for_absence_title"];
-    //         message = Localizer["shrinkage_add_daily_value_for_absence_message"];
-    //     }
-
-    //     string buttonText = Localizer["yes"];
-    //     ModalStack.PushModal(close => @<ConfirmationDialog
-    //                                       CloseModal="close"
-    //                                       Title="@title"
-    //                                       Message="@message"
-    //                                       ButtonText="@buttonText"
-    //                                       OnConfirm="@(() => InitiateDailyValueAndShrinkage(row))"/>);
-    // }
+    
 }
 
 

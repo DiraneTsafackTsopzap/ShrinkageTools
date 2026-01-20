@@ -201,6 +201,12 @@
   <data name="shrinkage_button_save" xml:space="preserve">
     <value>Speichern</value>
   </data>
+  <data name="shrinkage_button_start" xml:space="preserve">
+    <value>Start</value>
+  </data>
+  <data name="shrinkage_button_stop" xml:space="preserve">
+    <value>Stop</value>
+  </data>
   <data name="shrinkage_button_transferred" xml:space="preserve">
     <value>Transferred</value>
   </data>
@@ -282,6 +288,9 @@
   <data name="shrinkage_label_to" xml:space="preserve">
     <value>To</value>
   </data>
+  <data name="shrinkage_label_vacation" xml:space="preserve">
+    <value>UrlaubStunden</value>
+  </data>
   <data name="shrinkage_loader_message" xml:space="preserve">
     <value>Loading</value>
   </data>
@@ -347,6 +356,9 @@
   </data>
   <data name="shrinkage_warning_invalid_time_format" xml:space="preserve">
     <value>Invalid format (hh:mm). Example: 01:00.</value>
+  </data>
+  <data name="shrinkage_warning_not_valid_time_span_D" xml:space="preserve">
+    <value>The maximum allowed time you can enter for {0} is {1} hours.</value>
   </data>
   <data name="shrinkage_warning_no_teams" xml:space="preserve">
     <value>No teams loaded</value>

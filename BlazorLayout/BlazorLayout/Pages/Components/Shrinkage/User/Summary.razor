@@ -1,6 +1,8 @@
-﻿@using BlazorLayout.Pages.Components.Shrinkage.ReusableComponents
+﻿@using BlazorLayout.Enums
+@using BlazorLayout.Pages.Components.Shrinkage.ReusableComponents
 @using BlazorLayout.Pages.Components.Shrinkage.ReusableComponents.PopOvers
 @using BlazorLayout.Shared
+@using BlazorLayout.Utilities
 @inherits StatefulComponent<Summary.StateT>
 
 
@@ -142,6 +144,116 @@
 
             </AlignedTimeRow> 
 
+            <!-- Urlaub -->
+            <AlignedTimeRow Label="@Localizer["shrinkage_label_vacation"]">
+
+                <InputContent>
+                    <TimeInput Id="vacation-time"
+                               Placeholder="hh:mm"
+                               Value="@VacationTimeInput"
+                               ReadOnly="@(IsEditingDisabled || !isEditingVacationTime || IsReadOnly)"
+                               OnInput="@(e => VacationTimeInput = e.Value?.ToString() ?? string.Empty)"
+                               OnBlur="FormatVacationTimeOnBlur" />
+                </InputContent>
+
+                <ActionsContent>
+
+
+                    <ButtonPopover Disabled="@(IsUiLocked || IsTimerActive)"
+                                   Placement="right"
+                                   data-content-id="popover-vacation_time" />
+
+                    @if (!isEditingVacationTime)
+                    {
+                        <IconButton OnClick="@StartEditVacationTime"
+                                    ButtonType="button"
+                                    Disabled="@(IsUiLocked || IsEditingDisabled || AnySummaryEditing || IsTimerActive)"
+                                    CssClass="btn btn-outline-dark btn-sm fixed-btn">
+                            @Localizer["shrinkage_button_update"]
+                        </IconButton>
+                    }
+                    else
+                    {
+                        <IconButton OnClick="@SaveVacationTimeAsync"
+                                    ButtonType="button"
+                                    Disabled="@(IsUiLocked || IsEditingDisabled)"
+                                    CssClass="btn btn-success btn-sm fixed-btn">
+                            @Localizer["shrinkage_button_save"]
+                        </IconButton>
+                    }
+                </ActionsContent>
+
+            </AlignedTimeRow>
+
+            <div class="my-4"></div>
+
+            <!-- Differents Activities -->
+            @foreach (ActivityTypeDto type in Enum.GetValues(typeof(ActivityTypeDto))
+                        .Cast<ActivityTypeDto>()
+                        .Where(a => a != ActivityTypeDto.Unspecified))
+            {
+                var title = type.GetPopOverTitle();
+                var popoverId = "popover-" + title;
+
+                var runningForType = Activities.FirstOrDefault(a => a.ActivityType == type && a.StoppedAt == null);
+                var isTimerRunning = runningForType is not null;
+
+                string duration;
+
+                if (isTimerRunning)
+                {
+                    var elapsed = (TimerService.IsRunning && activeActivityType == type)
+                    ? TimerService.Elapsed
+                    : DateTime.Now - runningForType!.StartedAt;
+
+                    duration = TimeFormatter.FormatTimeSpanToHhMmSs(elapsed);
+                }
+                else
+                {
+                    var teamId = State!.CurrentUser!.TeamId;
+                    duration = teamId.HasValue
+                    ? TimeCalculator.GetTotalDurationOfActivity(Activities, type, teamId.Value)
+                    : "00:00";
+                }
+
+                // 🔴 ICI : TOUJOURS rendre la ligne
+                <AlignedTimeRow Label="@type.ConvertToActivityTypeString()">
+
+                    <InputContent>
+                        <TimeInput Value="@duration"
+                                   ReadOnly="true"
+                                   CssClass="@(isTimerRunning ? "fw-bold" : "")" />
+                    </InputContent>
+
+                    <ActionsContent>
+
+                        <ButtonPopover Disabled="@(IsUiLocked || IsTimerActive)"
+                                       Placement="right"
+                                       data-content-id="@popoverId" />
+
+                        @if (!isTimerRunning)
+                        {
+                            <IconButton OnClick="() => StartTimer(type)"
+                                        ButtonType="button"
+                                        Disabled="@(IsUiLocked || IsEditingDisabled || AnySummaryEditing || IsTimerActive)"
+                                        CssClass="btn btn-outline-success btn-sm fixed-btn">
+                                @Localizer["shrinkage_button_start"]
+                            </IconButton>
+                        }
+                        else
+                        {
+                            <IconButton OnClick="@StopTimer"
+                                        ButtonType="button"
+                                        Disabled="@(IsUiLocked || IsEditingDisabled)"
+                                        CssClass="btn btn-success btn-sm fixed-btn">
+                                @Localizer["shrinkage_button_stop"]
+                            </IconButton>
+                        }
+
+                    </ActionsContent>
+
+                </AlignedTimeRow>
+            }
 
 
         </div>

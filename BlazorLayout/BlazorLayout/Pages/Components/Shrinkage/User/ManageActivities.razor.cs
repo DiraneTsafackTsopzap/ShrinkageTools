@@ -5,6 +5,7 @@ using BlazorLayout.Modeles;
 using BlazorLayout.Shared;
 using BlazorLayout.Stores;
 using BlazorLayout.Utilities;
+using BlazorLayout.Validators;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Localization;
 using System.Xml.Linq;
@@ -109,12 +110,123 @@ namespace BlazorLayout.Pages.Components.Shrinkage.User
             }
         }
 
+        private async Task HandleSaveActivity(ActivityDto activity)
+        {
+            try
+            {
+                if (activity.TeamId == Guid.Empty)
+                {
+                    errorMessage = Localizer["shrinkage_warning_select_team"];
+                    return;
+                }
+
+                if (activity.ActivityType == ActivityTypeDto.Unspecified)
+                {
+                    errorMessage = Localizer["shrinkage_warning_select_activity"];
+                    return;
+                }
+
+                if (activity.StoppedAt.HasValue)
+                {
+                    if (CheckIfAllPaidTimeIsConsumed(activity))
+                    {
+                        return;
+                    }
+                }
+
+                if (CheckIfOverOverlapExist(activity))
+                {
+                    return;
+                }
+
+                await ShrinkageApi.SaveActivityByUserAsync(activity, TimeoutToken(Timeout));
+                if (activity.StoppedAt is not null)
+                    ResetButtonsAndClearMessages();
+
+                State.UserShrinkages[State.CurrentUser!.UserId].TryGetValue(ShrinkageDate, out userShrinkage);
+                StateHasChanged();
+            }
+            catch (BadRequestException ex)
+            {
+                errorMessage = Localizer["shrinkage_error_save_activity"];
+                if (ex.InnerException is HttpRequestException ex2 && ex2.GetReasonMessage(ex) is { } reason)
+                    errorMessage += " " + reason;
+            }
+            catch (OperationCanceledException) when (IsDisposing) { }
+
+            catch (Exception ex)
+            {
+                errorMessage = Localizer["shrinkage_error_save_activity"];
+                if (ex.InnerException is HttpRequestException ex2 && ex2.GetReasonMessage(ex) is { } reason)
+                    errorMessage += " " + reason;
+            }
+        }
+
+        private bool CheckIfOverOverlapExist(ActivityDto activity)
+        {
+            var message = ActivityValidator.ValidateOverlap(UserActivities, activity);
+
+            if (message is null)
+            {
+                return false;
+            }
+
+            warningMessage = message;
+            return true;
+        }
+
+        private void ResetButtonsAndClearMessages()
+        {
+            isEditing = false;
+            isAdding = false;
+            isTimerRunning = false;
+            isSummaryEditing = false;
+            errorMessage = null;
+            warningMessage = null;
+        }
+        private bool CheckIfAllPaidTimeIsConsumed(ActivityDto activity)
+        {
+            var remainingTime = TimeCalculator.GetRemainingTime(userPaidTime, userOvertime, userVacationTime, userPaidTimeOff, UserActivities);
+            var newActivityDuration = TimeSpan.Parse(TimeCalculator.GetDuration(activity.StartedAt, activity.StoppedAt!.Value));
+
+            if (UserActivities.Any(x => x.Id == activity.Id))
+            {
+                var modifiedActivity = UserActivities.Single(x => x.Id == activity.Id);
+                var modifiedActivityOldDuration = TimeSpan.Zero;
+                if (modifiedActivity.StoppedAt.HasValue)
+                {
+                    modifiedActivityOldDuration = TimeSpan.Parse(TimeCalculator.GetDuration(modifiedActivity.StartedAt, modifiedActivity.StoppedAt.Value));
+                }
+
+                if (newActivityDuration > (remainingTime + modifiedActivityOldDuration))
+                {
+                    var remainingAvailableTime = remainingTime + modifiedActivityOldDuration;
+                    warningMessage = Localizer["shrinkage_warning_time_consumed_S", remainingAvailableTime];
+                    return true;
+                }
+            }
+            else
+            {
+                if (remainingTime == TimeSpan.Zero || remainingTime < newActivityDuration)
+                {
+                    warningMessage = Localizer["shrinkage_warning_time_consumed_S", remainingTime];
+                    return true;
+                }
+            }
+
+            return false;
+        }
         private void HandleWarning(string? message)
         {
             warningMessage = message;
             StateHasChanged();
         }
-       
+        private void HandleTimerStateChanged(bool timerStarted)
+        {
+            isTimerRunning = timerStarted;
+            StateHasChanged();
+        }
+
         private void HandleSummaryChanged(bool isSummaryChanged)
         {
             isSummaryEditing = isSummaryChanged;

@@ -101,5 +101,21 @@ namespace BlazorLayout.Utilities;
 
         return result;
     }
+
+    public static string GetPopOverTitle(this Enum activityType)
+    {
+        var result = activityType switch
+        {
+            ActivityTypeDto.Meeting => "meeting",
+            ActivityTypeDto.Projects => "projects",
+            ActivityTypeDto.BusinessInterruption => "business-interruption",
+            ActivityTypeDto.TrainingOrCoaching => "training-or-coaching",
+            ActivityTypeDto.Others => "others",
+            ActivityTypeDto.ProductiveNotMeasurable => "productive-not-measurable",
+            _ => throw new InvalidEnumArgumentException(nameof(activityType)),
+        };
+
+        return result;
+    }
 }
 
