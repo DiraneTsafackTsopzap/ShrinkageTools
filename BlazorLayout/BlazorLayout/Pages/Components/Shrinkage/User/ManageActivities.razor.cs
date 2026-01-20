@@ -39,6 +39,10 @@ namespace BlazorLayout.Pages.Components.Shrinkage.User
         [Parameter, EditorRequired]
         public UserDailySummaryDto? SelectedDailySummaryRow { get; set; }
 
+        [Inject]
+        private ActivityTimerService TimerService { get; init; } = null!;
+
+
 
         private string? errorMessage;
         private string? warningMessage;
@@ -57,6 +61,7 @@ namespace BlazorLayout.Pages.Components.Shrinkage.User
         private bool isEditing;
         private bool isEditingActivity;
 
+      
         private bool IsUiLocked => isAdding || isEditing || isTimerRunning || isSummaryEditing;
 
         private TimeSpan userPaidTime = TimeSpan.Zero;
@@ -93,6 +98,29 @@ namespace BlazorLayout.Pages.Components.Shrinkage.User
 
             await GetUserDailySummary(false);
             ExtensionsHelper.Localizer = Localizer;
+
+            SelectedDailySummaryRow = State.Summaries.FirstOrDefault(x => x.Date == ShrinkageDate);
+
+            
+            if (TimerService.CurrentActivity is { StoppedAt: null } active)
+            {
+                var activeDate = SystemDateOnly.FromDateTime(active.StartedAt.DateTime);
+
+                var summaryRow = State.Summaries.FirstOrDefault(x => x.Date == activeDate);
+
+                if (summaryRow is not null)
+                {
+                    await SelectDailySummaryRow(summaryRow);
+                    return;
+                }
+            }
+
+
+            if (SelectedDailySummaryRow != null)
+            {
+                await SelectDailySummaryRow(SelectedDailySummaryRow);
+                return;
+            }
 
             SelectedDailySummaryRow = State.Summaries.FirstOrDefault(x => x.Date == ShrinkageDate);
 
@@ -173,6 +201,29 @@ namespace BlazorLayout.Pages.Components.Shrinkage.User
 
             warningMessage = message;
             return true;
+        }
+        private async Task SelectDailySummaryRow(UserDailySummaryDto row)
+        {
+            errorMessage = null;
+            warningMessage = null;
+            if (row.AbsenceType != AbsenceTypeDto.Unspecified)
+                return;
+
+            ShrinkageDate = row.Date;
+            await LoadUserShrinkageForDateAsync(ShrinkageDate, false);
+            var paidTimeForDay = userShrinkage?.PaidTime ?? TimeSpan.Zero;
+            var overTimeForDay = userShrinkage?.Overtime ?? TimeSpan.Zero;
+
+            SelectedDailySummaryRow = State.Summaries.FirstOrDefault(x => x.Date == ShrinkageDate);
+
+            if (paidTimeForDay == TimeSpan.Zero && overTimeForDay == TimeSpan.Zero)
+            {
+                warningMessage = Localizer["shrinkage_warning_paid_time_is_zero_D", ShrinkageDate.GetDayName()];
+                return;
+            }
+
+            ResetButtonsAndClearMessages();
+            StateHasChanged();
         }
 
         private void ResetButtonsAndClearMessages()
