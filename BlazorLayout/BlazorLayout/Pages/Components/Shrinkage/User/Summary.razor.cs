@@ -179,6 +179,16 @@ namespace BlazorLayout.Pages.Components.Shrinkage.User;
         }
     }
 
+    private string GetProductiveTime()
+    {
+        return TimeCalculator.GetProductiveTime(PaidTime, CurrentOvertime, CurrentVacationTime, CurrentPaidTimeOff, Activities);
+    }
+    private string GetLoanTime()
+    {
+        var userTeamId = State.CurrentUser?.TeamId;
+        return TimeCalculator.GetLoanTime(Activities, userTeamId!.Value);
+    }
+
     private string OvertimeInput
     {
         get => overtimeInput;

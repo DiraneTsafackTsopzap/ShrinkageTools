@@ -267,6 +267,9 @@
   <data name="shrinkage_label_granted_on" xml:space="preserve">
     <value>Created at</value>
   </data>
+  <data name="shrinkage_label_loan_time" xml:space="preserve">
+    <value>Unterstützung anderer Teams</value>
+  </data>
   <data name="shrinkage_label_over_time" xml:space="preserve">
     <value>Überstunden</value>
   </data>
@@ -275,6 +278,9 @@
   </data>
   <data name="shrinkage_label_paid_time_off" xml:space="preserve">
     <value>Freizeitausgleich</value>
+  </data>
+  <data name="shrinkage_label_productive_time" xml:space="preserve">
+    <value>Produktive Zeit</value>
   </data>
   <data name="shrinkage_label_public_holiday" xml:space="preserve">
     <value>Holiday</value>

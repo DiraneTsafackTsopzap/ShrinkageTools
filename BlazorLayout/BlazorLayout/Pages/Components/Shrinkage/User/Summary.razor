@@ -257,6 +257,28 @@
             }
 
 
+            <AlignedTimeRow Label="@Localizer["shrinkage_label_loan_time"]">
+
+                <InputContent>
+                    <TimeInput Value="@GetLoanTime()" ReadOnly="true" />
+                </InputContent>
+
+                <ActionsContent>
+                    <ButtonPopover Disabled="@(AnySummaryEditing || IsTimerActive)"
+                                   Placement="right"
+                                   data-content-id="popover-loan" />
+                </ActionsContent>
+            </AlignedTimeRow>
+
+            <AlignedTimeRow Label="@Localizer["shrinkage_label_productive_time"]">
+
+                <InputContent>
+                    <TimeInput Value="@GetProductiveTime()" ReadOnly="true" />
+                </InputContent>
+
+              
+            </AlignedTimeRow>
+
         </div>
 
     </div>
