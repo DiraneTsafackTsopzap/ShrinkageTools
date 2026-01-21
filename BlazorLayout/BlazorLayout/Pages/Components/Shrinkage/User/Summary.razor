@@ -236,7 +236,7 @@
                         {
                             <IconButton OnClick="async () => await StartTimer(type)"
                                         ButtonType="button"
-                                        Disabled="@(AnySummaryEditing || IsReadOnly)"
+                                        Disabled="@(AnySummaryEditing || IsReadOnly || IsTimerActive)"
                                         CssClass="btn btn-outline-success btn-sm fixed-btn">
                                 @Localizer["shrinkage_button_start"]
                             </IconButton>
@@ -245,7 +245,7 @@
                         {
                             <IconButton OnClick="async () => await StopTimer()"
                                         ButtonType="button"
-                                        
+                                        Disabled="@(AnySummaryEditing || IsReadOnly)"
                                         CssClass="btn btn-success btn-sm fixed-btn">
                                 @Localizer["shrinkage_button_stop"]
                             </IconButton>
