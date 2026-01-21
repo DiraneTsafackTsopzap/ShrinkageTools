@@ -8,7 +8,7 @@
 
     <div class="row">
 
-    <div class="col-md-6">
+    <div class="col-5">
         
         <div class="form-group row align-items-center mb-2">
             <label for="team" class="col-5 col-form-label text-end">@Localizer["shrinkage_message_select_team"] :</label>
@@ -40,8 +40,6 @@
 
             <div class="my-4"></div>
 
-
-
             @* Bezahlen Stunden *@
            <AlignedTimeRow Label="@Localizer["shrinkage_label_paid_time"]">
 
@@ -61,7 +59,6 @@
                                   Placeholder="hh:mm"
                                   Value="@PaidTimeOffInput"
                                   ReadOnly="@(!isEditingPaidTimeOff || IsReadOnly)"
-                                  
                                   OnInput="@(e => PaidTimeOffInput = e.Value?.ToString() ?? string.Empty)"
                                   OnBlur="FormatPaidTimeOffOnBlur" />
                 </InputContent>
@@ -257,6 +254,7 @@
             }
 
 
+            <!-- Loan Time -->
             <AlignedTimeRow Label="@Localizer["shrinkage_label_loan_time"]">
 
                 <InputContent>
@@ -270,6 +268,7 @@
                 </ActionsContent>
             </AlignedTimeRow>
 
+            <!-- Productive Time -->
             <AlignedTimeRow Label="@Localizer["shrinkage_label_productive_time"]">
 
                 <InputContent>
@@ -280,6 +279,100 @@
             </AlignedTimeRow>
 
         </div>
+
+    </div>
+
+    <div class="col-7">
+
+        @if(UserShrinkage != null)
+        {
+            <div class="row mb-2">
+                <label for="status" class="col-5 col-form-label text-end align-self-start">
+                    @Localizer["shrinkage_label_transfer_status"]:
+                </label>
+                <div class="col-6">
+                    <input id="status"
+                           type="text"
+                           class="form-control form-control-sm"
+                           style="width: 82%;"
+                           value="@UserShrinkage.UserDailyValues?.Status.ToDisplayString()"
+                           readonly />
+                </div>
+            </div>
+
+
+            <div class="row mb-2">
+                <label for="shrinkage-date" class="col-5 col-form-label text-end align-self-start">
+                    @Localizer["shrinkage_label_date"]:
+                </label>
+                <div class="col-6">
+                    <input id="shrinkage-date"
+                           type="text"
+                           class="form-control form-control-sm"
+                           style="width: 82%;"
+                           value="@($"{DayName}, {ShrinkageDate.ToShortDateString()} ")"
+                           readonly />
+                </div>
+            </div>
+
+            <div class="row mb-2">
+                <label for="team-name" class="col-5 col-form-label text-end align-self-start">
+                    @Localizer["shrinkage_label_team"]:
+                </label>
+                <div class="col-6">
+                    <input id="team-name"
+                           type="text"
+                           class="form-control form-control-sm"
+                           style="width: 82%;"
+                           value="@GetTeamName()"
+                           readonly />
+                </div>
+            </div>
+
+            <div class="row mb-2">
+                <label for="updated-by" class="col-5 col-form-label text-end align-self-start">
+                    @Localizer["shrinkage_label_granted_by"]:
+                </label>
+                <div class="col-6">
+                    <input id="updated-by"
+                           type="text"
+                           class="form-control form-control-sm"
+                           style="width: 82%;"
+                           value="@UserShrinkage.UserDailyValues?.UpdatedBy"
+                           readonly />
+                </div>
+            </div>
+
+            <div class="row mb-2">
+                <label for="updated-on" class="col-5 col-form-label text-end align-self-start">
+                    @Localizer["shrinkage_label_granted_on"]:
+                </label>
+                <div class="col-6">
+                    <input id="updated-on"
+                           type="text"
+                           class="form-control form-control-sm"
+                           style="width: 82%;"
+                           value="@(UserShrinkage.UserDailyValues?.UpdatedAt is not null
+                                                       ? UserShrinkage.UserDailyValues.UpdatedAt?.ToShortDateString()
+                                                       : string.Empty)"
+                       readonly />
+            </div>
+        </div>
+
+            <div class="row mb-2">
+                <label for="comment" class="col-5 col-form-label text-end align-self-start">
+                    @Localizer["shrinkage_label_comment"]:
+                </label>
+                <div class="col-6">
+                    <textarea id="comment"
+                          class="form-control form-control-sm textarea-scroll"
+                          rows="12"
+                          readonly>Comment</textarea>
+                </div>
+            </div>
+
+        }
+
 
     </div>
 

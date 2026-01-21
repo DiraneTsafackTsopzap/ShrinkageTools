@@ -50,7 +50,8 @@ namespace BlazorLayout.Pages.Components.Shrinkage.User;
     [Inject]
     private IStringLocalizer Localizer { get; init; } = null!;
 
-
+    [Parameter, EditorRequired]
+    public string DayName { get; set; } = "";
 
     [Inject]
     private IJSRuntime JsRuntime { get; init; } = null!;
@@ -116,7 +117,11 @@ namespace BlazorLayout.Pages.Components.Shrinkage.User;
 
     private Guid? selectedTeamId;
 
-
+    private string GetTeamName()
+    {
+        var team = State.Teams.First(t => t.Id == State.CurrentUser?.TeamId).Name;
+        return team;
+    }
 
     /// <summary>
     /// Summary expose un événement vers l’extérieur, que le parent doit fournir.

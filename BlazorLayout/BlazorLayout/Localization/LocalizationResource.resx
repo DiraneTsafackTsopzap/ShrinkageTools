@@ -252,6 +252,12 @@
   <data name="shrinkage_label_activity" xml:space="preserve">
     <value>Activity</value>
   </data>
+  <data name="shrinkage_label_comment" xml:space="preserve">
+    <value>Kommentar</value>
+  </data>
+  <data name="shrinkage_label_date" xml:space="preserve">
+    <value>Date</value>
+  </data>
   <data name="shrinkage_label_duration" xml:space="preserve">
     <value>Duration</value>
   </data>
@@ -293,6 +299,9 @@
   </data>
   <data name="shrinkage_label_to" xml:space="preserve">
     <value>To</value>
+  </data>
+  <data name="shrinkage_label_transfer_status" xml:space="preserve">
+    <value>Status</value>
   </data>
   <data name="shrinkage_label_vacation" xml:space="preserve">
     <value>UrlaubStunden</value>
