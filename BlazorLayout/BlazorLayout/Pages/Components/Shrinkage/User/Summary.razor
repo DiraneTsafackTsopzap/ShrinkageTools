@@ -233,7 +233,7 @@
 
                         @if (!isTimerRunning)
                         {
-                            <IconButton OnClick="() => StartTimer(type)"
+                            <IconButton OnClick="async () => await StartTimer(type)"
                                         ButtonType="button"
                                         Disabled="@(IsUiLocked || IsEditingDisabled || AnySummaryEditing || IsTimerActive)"
                                         CssClass="btn btn-outline-success btn-sm fixed-btn">
@@ -242,7 +242,7 @@
                         }
                         else
                         {
-                            <IconButton OnClick="@StopTimer"
+                            <IconButton OnClick="async () => await StopTimer()"
                                         ButtonType="button"
                                         Disabled="@(IsUiLocked || IsEditingDisabled)"
                                         CssClass="btn btn-success btn-sm fixed-btn">
