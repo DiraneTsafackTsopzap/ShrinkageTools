@@ -25,7 +25,7 @@
                     {
                         <EditForm id="team" Model="UserShrinkage.UserDailyValues">
                             <InputSelect @bind-Value="selectedTeamId"
-                                         disabled="@IsUiLocked"
+                                         
                                          class="form-control" style="width: 90% !important;">
                                 <option value="@Guid.Empty" disabled>-- @Localizer["shrinkage_message_select_team"] --</option>
                                 @foreach (var team in State.Teams.OrderBy(x => x.Name))
@@ -60,7 +60,8 @@
                        <TimeInput Id="paid-time-off"
                                   Placeholder="hh:mm"
                                   Value="@PaidTimeOffInput"
-                                  ReadOnly="@(IsEditingDisabled || !isEditingPaidTimeOff || IsReadOnly)"
+                                  ReadOnly="@(!isEditingPaidTimeOff || IsReadOnly)"
+                                  
                                   OnInput="@(e => PaidTimeOffInput = e.Value?.ToString() ?? string.Empty)"
                                   OnBlur="FormatPaidTimeOffOnBlur" />
                 </InputContent>
@@ -68,7 +69,7 @@
                 <ActionsContent>
                   
                    
-                    <ButtonPopover Disabled="@(IsUiLocked || IsTimerActive)"
+                    <ButtonPopover Disabled="@( AnySummaryEditing|| IsTimerActive)"
                                    Placement="right"
                                    data-content-id="popover-paid-time-off" />
 
@@ -78,7 +79,7 @@
 
                         <IconButton OnClick="@StartEditPaid"
                                     ButtonType="button"
-                                    Disabled="@(IsUiLocked || IsEditingDisabled || AnySummaryEditing || IsTimerActive)"
+                                    Disabled="@(AnySummaryEditing || IsTimerActive)"
                                     CssClass="btn btn-outline-dark btn-sm fixed-btn">
                             @Localizer["shrinkage_button_update"]
                         </IconButton>
@@ -88,8 +89,6 @@
                     {
                         <IconButton OnClick="@SavePaidTimeOffAsync"
                                     ButtonType="button"
-                                    Disabled="@(IsUiLocked || IsEditingDisabled)"
-                                    
                                     CssClass="btn btn-success btn-sm fixed-btn">
                             @Localizer["shrinkage_button_save"]
                         </IconButton>
@@ -106,7 +105,7 @@
                       <TimeInput Id="overtime"
                                Placeholder="hh:mm"
                                Value="@OvertimeInput"
-                               ReadOnly="@(IsEditingDisabled || !isEditingOvertime || IsReadOnly)"
+                               ReadOnly="@(!isEditingOvertime || IsReadOnly)"
                                OnInput="@(e => OvertimeInput = e.Value?.ToString() ?? string.Empty)"
                                OnBlur="FormatOvertimeOnBlur" />
                 </InputContent>
@@ -114,7 +113,7 @@
                 <ActionsContent>
                     
 
-                    <ButtonPopover Disabled="@(IsUiLocked || IsTimerActive)"
+                    <ButtonPopover Disabled="@(IsTimerActive || AnySummaryEditing)"
                                    Placement="right"
                                    data-content-id="popover-overtime" />
 
@@ -124,7 +123,7 @@
 
                         <IconButton OnClick="@StartEditOvertime"
                                     ButtonType="button"
-                                    Disabled="@(IsUiLocked || IsEditingDisabled || AnySummaryEditing || IsTimerActive)"
+                                    Disabled="@(AnySummaryEditing || IsTimerActive)"
                                     CssClass="btn btn-outline-dark btn-sm fixed-btn">
                             @Localizer["shrinkage_button_update"]
                         </IconButton>
@@ -135,7 +134,7 @@
                     {
                         <IconButton OnClick="@SaveOvertimeAsync"
                                     ButtonType="button"
-                                    Disabled="@(IsUiLocked || IsEditingDisabled)"
+                                    
                                     CssClass="btn btn-success btn-sm fixed-btn">
                             @Localizer["shrinkage_button_save"]
                         </IconButton>
@@ -151,7 +150,7 @@
                     <TimeInput Id="vacation-time"
                                Placeholder="hh:mm"
                                Value="@VacationTimeInput"
-                               ReadOnly="@(IsEditingDisabled || !isEditingVacationTime || IsReadOnly)"
+                               ReadOnly="@(!isEditingVacationTime || IsReadOnly)"
                                OnInput="@(e => VacationTimeInput = e.Value?.ToString() ?? string.Empty)"
                                OnBlur="FormatVacationTimeOnBlur" />
                 </InputContent>
@@ -159,15 +158,16 @@
                 <ActionsContent>
 
 
-                    <ButtonPopover Disabled="@(IsUiLocked || IsTimerActive)"
+                    <ButtonPopover 
                                    Placement="right"
+                                   Disabled="@(AnySummaryEditing || IsTimerActive)"
                                    data-content-id="popover-vacation_time" />
 
                     @if (!isEditingVacationTime)
                     {
                         <IconButton OnClick="@StartEditVacationTime"
                                     ButtonType="button"
-                                    Disabled="@(IsUiLocked || IsEditingDisabled || AnySummaryEditing || IsTimerActive)"
+                                    Disabled="@(AnySummaryEditing || IsTimerActive)"
                                     CssClass="btn btn-outline-dark btn-sm fixed-btn">
                             @Localizer["shrinkage_button_update"]
                         </IconButton>
@@ -176,7 +176,7 @@
                     {
                         <IconButton OnClick="@SaveVacationTimeAsync"
                                     ButtonType="button"
-                                    Disabled="@(IsUiLocked || IsEditingDisabled)"
+                                    
                                     CssClass="btn btn-success btn-sm fixed-btn">
                             @Localizer["shrinkage_button_save"]
                         </IconButton>
@@ -227,15 +227,16 @@
 
                     <ActionsContent>
 
-                        <ButtonPopover Disabled="@(IsUiLocked || IsTimerActive)"
+                        <ButtonPopover 
                                        Placement="right"
+                                       Disabled="@(AnySummaryEditing || IsTimerActive)"
                                        data-content-id="@popoverId" />
 
                         @if (!isTimerRunning)
                         {
                             <IconButton OnClick="async () => await StartTimer(type)"
                                         ButtonType="button"
-                                        Disabled="@(IsUiLocked || IsEditingDisabled || AnySummaryEditing || IsTimerActive)"
+                                        Disabled="@(AnySummaryEditing || IsReadOnly)"
                                         CssClass="btn btn-outline-success btn-sm fixed-btn">
                                 @Localizer["shrinkage_button_start"]
                             </IconButton>
@@ -244,7 +245,7 @@
                         {
                             <IconButton OnClick="async () => await StopTimer()"
                                         ButtonType="button"
-                                        Disabled="@(IsUiLocked || IsEditingDisabled)"
+                                        
                                         CssClass="btn btn-success btn-sm fixed-btn">
                                 @Localizer["shrinkage_button_stop"]
                             </IconButton>

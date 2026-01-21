@@ -109,21 +109,6 @@
                            
                                  <div class="mb-4">
 
-                                    @* <ActivityListManagement DefaultTeamId="State.CurrentUser!.TeamId!.Value"
-                                                            UserActivities="@UserActivities"
-                                                            IsTimerActive="@IsTimerActive"
-                                                            ShrinkageDate="@ShrinkageDate"
-                                                            IsReadOnly="@(IsReadOnly || isSummaryEditing)"
-                                                            HasError="@HasError"
-                                                            IsUiLocked="@(IsUiLocked || isSummaryEditing)"
-                                                            OnWarning="HandleWarning"
-                                                            OnEditOrAddChanged="HandleActivityEditChanged"
-                                                            OnErrorStateChanged="HandleError"
-                                                            OnAdjustmentsChanged="@(() => LoadUserShrinkageForDateAsync(ShrinkageDate, false))"
-                                                            UserPaidTime="@userPaidTime"
-                                                            UserOvertime="@userOvertime"
-                                                            UserVacationTime="@userVacationTime"
-                                                            UserPaidTimeOff="@userPaidTimeOff"/> *@
 
                                                             <ActivityListManagement 
                                                                 UserPaidTimeOff="@userPaidTimeOff"
@@ -151,13 +136,12 @@
                                          UserShrinkage=userShrinkage
                                          TargetDate="@ShrinkageDate"
                                          IsReadOnly="@IsReadOnly"
-                                         IsEditing="@isEditing"
+                                         
                                          OnWarning="HandleWarning"
                                          OnTimerStateChanged="HandleTimerStateChanged"
                                          OnGlobalEditChanged="HandleSummaryChanged"
                                          OnAdjustmentsChanged="@(() => LoadUserShrinkageForDateAsync(ShrinkageDate, false))"
-                                         IsEditingDisabled="@(isAdding || isEditing || isTimerRunning || IsReadOnly)"
-                                         IsUiLocked="@(isAdding || isEditing || isTimerRunning || isEditingActivity || IsReadOnly)"
+                                      
                                          OnSave="HandleSaveActivity" />
       
                                 <div class="d-flex justify-content-end mt-3">

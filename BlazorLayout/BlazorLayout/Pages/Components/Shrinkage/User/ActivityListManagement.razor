@@ -158,6 +158,10 @@
     [Parameter, EditorRequired]
     public Action<string?> OnErrorStateChanged { get; set; }
 
+    // [Parameter, EditorRequired]
+    // public Action<bool> OnEditOrAddChanged { get; set; }
+
+
     private const int Timeout = 30_000;
 
     private string? deleteActivityTitle;
@@ -229,7 +233,7 @@
         }
 
         isAddingRow = true;
-        //OnEditOrAddChanged(true);
+       // OnEditOrAddChanged(true);
 
         formActivityDto = new ActivityDto
         {
@@ -304,7 +308,7 @@
     private void OnCancel()
     {
         isAddingRow = false;
-        //OnEditOrAddChanged(false);
+       // OnEditOrAddChanged(false);
         isEditing = false;
         ResetForm();
         OnWarning(null);
@@ -348,7 +352,7 @@
             await ShrinkageApi.SaveActivityByUserAsync(formActivityDto, TimeoutToken(Timeout));
             ResetForm();
             // await OnAdjustmentsChanged();
-            // OnEditOrAddChanged(false);
+           // OnEditOrAddChanged(false);
             StateHasChanged();
         }
         catch (Exception ex) when (ex is BadRequestException or NotFoundException or SaveActivityException)

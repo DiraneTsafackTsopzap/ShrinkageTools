@@ -62,7 +62,7 @@ namespace BlazorLayout.Pages.Components.Shrinkage.User
         private bool isEditingActivity;
 
       
-        private bool IsUiLocked => isAdding || isEditing || isTimerRunning || isSummaryEditing;
+     
 
         private TimeSpan userPaidTime = TimeSpan.Zero;
         private TimeSpan userOvertime = TimeSpan.Zero;

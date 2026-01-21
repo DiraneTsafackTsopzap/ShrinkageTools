@@ -50,8 +50,7 @@ namespace BlazorLayout.Pages.Components.Shrinkage.User;
     [Inject]
     private IStringLocalizer Localizer { get; init; } = null!;
 
-    [Parameter, EditorRequired]
-    public bool IsEditing { get; set; }
+
 
     [Inject]
     private IJSRuntime JsRuntime { get; init; } = null!;
@@ -63,8 +62,7 @@ namespace BlazorLayout.Pages.Components.Shrinkage.User;
     [Parameter, EditorRequired]
     public SystemDateOnly TargetDate { get; set; }
 
-    [Parameter, EditorRequired]
-    public bool IsEditingDisabled { get; set; }
+
 
     private string paidTimeOffInput = string.Empty;
     private string overtimeInput = string.Empty;
@@ -92,6 +90,12 @@ namespace BlazorLayout.Pages.Components.Shrinkage.User;
     public Func<ActivityDto, Task> OnSave { get; set; }
 
     private string? errorMessage;
+
+
+    /// <summary>
+    /// Grace a ce AnySummaryEditing on va desactiver tous les Autres Boutons ds le Razor
+    /// Si L'user clique sur le Bearbeiten de Freizeitausgleich et bien je desactive tous les autres
+    /// </summary>
     private bool AnySummaryEditing => isEditingPaidTimeOff || isEditingOvertime || isEditingVacationTime;
 
     private bool IsTimerActive => TimerService.IsRunning || Activities.Any(a => a.StoppedAt == null);
@@ -101,8 +105,7 @@ namespace BlazorLayout.Pages.Components.Shrinkage.User;
 
     private Guid? selectedTeamId;
 
-    [Parameter, EditorRequired]
-    public bool IsUiLocked { get; set; }
+
 
 
     [Parameter, EditorRequired]
@@ -132,7 +135,7 @@ namespace BlazorLayout.Pages.Components.Shrinkage.User;
 
     private void OnTimerTick()
     {
-        Console.WriteLine($"[OnTimerTick] Elapsed = {TimerService.Elapsed}");
+     
         _ = InvokeAsync(StateHasChanged);
     }
 
@@ -200,7 +203,7 @@ namespace BlazorLayout.Pages.Components.Shrinkage.User;
 
     private void FormatPaidTimeOffOnBlur()
     {
-        if (IsEditingDisabled || !isEditingPaidTimeOff || IsReadOnly)
+        if (!isEditingPaidTimeOff || IsReadOnly)
             return;
 
         var formatted = ShrinkageExtensionsHelper.FormatAsTime(PaidTimeOffInput);
@@ -209,7 +212,7 @@ namespace BlazorLayout.Pages.Components.Shrinkage.User;
 
     private void FormatOvertimeOnBlur()
     {
-        if (IsEditingDisabled || !isEditingOvertime || IsReadOnly)
+        if (!isEditingOvertime || IsReadOnly)
             return;
 
         var formatted = ShrinkageExtensionsHelper.FormatAsTime(overtimeInput);
@@ -218,7 +221,7 @@ namespace BlazorLayout.Pages.Components.Shrinkage.User;
 
     private void FormatVacationTimeOnBlur()
     {
-        if (IsEditingDisabled || !isEditingVacationTime || IsReadOnly)
+        if (  !isEditingVacationTime || IsReadOnly)
             return;
 
         var formatted = ShrinkageExtensionsHelper.FormatAsTime(vacationTimeInput);
@@ -228,7 +231,7 @@ namespace BlazorLayout.Pages.Components.Shrinkage.User;
     private void StartEditPaid()
     {
         OnWarning(null);
-        if (IsEditingDisabled || IsReadOnly) return;
+        if ( IsReadOnly) return;
         if (UnfinishedActivityExist()) return;
         isEditingPaidTimeOff = true;
         isEditingOvertime = false;
@@ -239,7 +242,7 @@ namespace BlazorLayout.Pages.Components.Shrinkage.User;
     private void StartEditOvertime()
     {
         OnWarning(null);
-        if (IsEditingDisabled || IsReadOnly) return;
+        if (IsReadOnly) return;
         if (UnfinishedActivityExist()) return;
         isEditingPaidTimeOff = false;
         isEditingOvertime = true;
@@ -250,14 +253,14 @@ namespace BlazorLayout.Pages.Components.Shrinkage.User;
     private void StartEditVacationTime()
     {
         OnWarning(null);
-        if (IsEditingDisabled || IsReadOnly) return;
+        if (IsReadOnly) return;
         if (UnfinishedActivityExist()) return;
         isEditingPaidTimeOff = false;
         isEditingOvertime = false;
         isEditingVacationTime = true;
         OnGlobalEditChanged(true);
     }
-    private void StartTimer(ActivityTypeDto activityType)
+    private async Task StartTimer(ActivityTypeDto activityType)
     {
       
         OnWarning(null);
@@ -325,12 +328,12 @@ namespace BlazorLayout.Pages.Components.Shrinkage.User;
         }
 
         TimerService.StartActivity(activityType, newActivity);
-         OnSave(newActivity);
+         await OnSave(newActivity);
         StateHasChanged();
     }
 
 
-    private void StopTimer()
+    private async Task StopTimer()
     {
         TimerService.Stop();
         TimerService.StopActivity();
@@ -358,7 +361,7 @@ namespace BlazorLayout.Pages.Components.Shrinkage.User;
                     StoppedAt = new DateTimeOffset(ShrinkageDate.ToDateTime(TimerService.StopTime!.Value), DateTimeOffset.Now.Offset),
                 };
 
-             OnSave(newActivity);
+             await OnSave(newActivity);
             activeActivityType = ActivityTypeDto.Unspecified;
             newActivity = null;
         }
