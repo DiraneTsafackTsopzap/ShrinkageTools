@@ -175,7 +175,7 @@
     <value>Others</value>
   </data>
   <data name="shrinkage_activity_type_productive_not_measurable" xml:space="preserve">
-    <value>Prod nicht messbar </value>
+    <value>Prod. n.messb.</value>
   </data>
   <data name="shrinkage_activity_type_projects" xml:space="preserve">
     <value>Projects</value>
@@ -280,7 +280,7 @@
     <value>Überstunden</value>
   </data>
   <data name="shrinkage_label_paid_time" xml:space="preserve">
-    <value>Bezahlte Stunden</value>
+    <value>Bezahlt Std.</value>
   </data>
   <data name="shrinkage_label_paid_time_off" xml:space="preserve">
     <value>Freizeitausgleich</value>
