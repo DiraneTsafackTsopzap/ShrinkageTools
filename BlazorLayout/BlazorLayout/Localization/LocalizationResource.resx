@@ -166,7 +166,7 @@
     <value>Timer</value>
   </data>
   <data name="shrinkage_activity_type_business_interruption" xml:space="preserve">
-    <value>Business interruption</value>
+    <value> Interruption</value>
   </data>
   <data name="shrinkage_activity_type_meeting" xml:space="preserve">
     <value>Meeting</value>
@@ -175,13 +175,13 @@
     <value>Others</value>
   </data>
   <data name="shrinkage_activity_type_productive_not_measurable" xml:space="preserve">
-    <value>Productive not measurable</value>
+    <value>Prod nicht messbar </value>
   </data>
   <data name="shrinkage_activity_type_projects" xml:space="preserve">
     <value>Projects</value>
   </data>
   <data name="shrinkage_activity_type_training_or_coaching" xml:space="preserve">
-    <value>Training / Coaching</value>
+    <value>Schulung</value>
   </data>
   <data name="shrinkage_activity_unknown_status" xml:space="preserve">
     <value>Unknown</value>
@@ -268,7 +268,7 @@
     <value>Created at</value>
   </data>
   <data name="shrinkage_label_loan_time" xml:space="preserve">
-    <value>Unterstützung anderer Teams</value>
+    <value>Team Hilfe</value>
   </data>
   <data name="shrinkage_label_over_time" xml:space="preserve">
     <value>Überstunden</value>

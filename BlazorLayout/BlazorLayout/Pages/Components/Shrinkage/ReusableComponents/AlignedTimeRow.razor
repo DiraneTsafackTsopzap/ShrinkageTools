@@ -1,29 +1,31 @@
-﻿<div class="row align-items-center mb-2 flex-nowrap">
+﻿
+<div class="row align-items-center mb-1 flex-nowrap">
 
     <!-- Label + : -->
-    <div class="col-auto" style="width: 220px;">
+    <div class="col-auto" style="min-width: 180px; max-width: 220px;">
         <div class="d-flex justify-content-end">
-            <span class="me-1">
+            <span class="me-1 text-nowrap small">
                 @Label
             </span>
-            <span style="width: 10px; text-align: center;">:</span>
+            <span style="width: 2px; text-align: center;">:</span>
         </div>
     </div>
 
     <!-- Input -->
-    <div class="col-auto">
+    <div class="col-auto ps-1 pe-1">
         @InputContent
     </div>
 
-    <!-- Optional actions ( ? , buttons, etc. ) -->
+    <!-- Optional actions -->
     @if (ActionsContent != null)
     {
-        <div class="col-auto d-flex align-items-center">
+        <div class="col-auto d-flex align-items-center small ps-1 pe-0">
             @ActionsContent
         </div>
     }
 
 </div>
+
 
 @code {
     [Parameter, EditorRequired]
