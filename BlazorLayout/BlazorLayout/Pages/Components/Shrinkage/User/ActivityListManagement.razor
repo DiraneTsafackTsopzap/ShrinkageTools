@@ -17,7 +17,7 @@
     @* 1- Ajout du Bouton Pr declencher le ShowAddRow *@
   
      <IconButton OnClick="@ShowAddRow" 
-                Disabled="@(isAddingRow || isEditing)"
+                Disabled="@(isAddingRow || isEditing || IsSummaryLocked)"
                 IconSrc="img/add-icon.svg"
                 Title="@Localizer["shrinkage_tooltip_add"]"
                 Alt="Add"
@@ -85,7 +85,7 @@
                         <div class="d-flex gap-2 justify-content-center">
                             
                             <IconButton OnClick="@(() => EditActivity(row))"
-                                        Disabled="@(isAddingRow || isEditing)"
+                                        Disabled="@(isAddingRow || isEditing || IsSummaryLocked)"
                                         IconSrc="img/edit-icon.svg"
                                         Title="@Localizer["shrinkage_tooltip_edit"]"
                                         Alt="Edit"
@@ -93,7 +93,7 @@
                                         @attributes="AddIconAttributes" />
 
                             <IconButton OnClick="@(() => ConfirmDeleteActivity(row))"
-                                        Disabled="@(isAddingRow || isEditing)"
+                                        Disabled="@(isAddingRow || isEditing || IsSummaryLocked)"
                                         IconSrc="img/bin-icon.svg"
                                         Title="@Localizer["shrinkage_tooltip_delete"]"
                                         Alt="Delete"
@@ -158,10 +158,13 @@
     [Parameter, EditorRequired]
     public Action<string?> OnErrorStateChanged { get; set; }
 
-    // [Parameter, EditorRequired]
-    // public Action<bool> OnEditOrAddChanged { get; set; }
+    [Parameter, EditorRequired]
+    public Action<bool> OnActivityEditingChanged { get; set; } = default!;
 
+    [Parameter, EditorRequired]
+    public bool IsSummaryLocked { get; set; }
 
+   
     private const int Timeout = 30_000;
 
     private string? deleteActivityTitle;
@@ -210,6 +213,9 @@
         if (teamId == null) return string.Empty;
         return State.Teams.FirstOrDefault(t => t.Id == teamId)?.Name ?? throw new InvalidOperationException($"Team with ID {teamId} not found.");
     }
+
+    private bool IsActivityEditing => isAddingRow || isEditing;
+
     private bool isAddingRow;
     private bool isEditing;
 
@@ -233,7 +239,7 @@
         }
 
         isAddingRow = true;
-       // OnEditOrAddChanged(true);
+        OnActivityEditingChanged(true);
 
         formActivityDto = new ActivityDto
         {
@@ -262,7 +268,7 @@
         }
 
         isEditing = true;
-        //OnEditOrAddChanged(true);
+        OnActivityEditingChanged(true);
         formActivityDto = new ActivityDto
         {
             Id = activity.Id,
@@ -308,7 +314,7 @@
     private void OnCancel()
     {
         isAddingRow = false;
-       // OnEditOrAddChanged(false);
+        OnActivityEditingChanged(false);
         isEditing = false;
         ResetForm();
         OnWarning(null);
@@ -327,7 +333,7 @@
         isAddingRow = false;
         isEditing = false;
         selectedActivity = null;
-        //OnEditOrAddChanged(false);
+        OnActivityEditingChanged(false);
         OnWarning(null);
     }
 
@@ -352,7 +358,7 @@
             await ShrinkageApi.SaveActivityByUserAsync(formActivityDto, TimeoutToken(Timeout));
             ResetForm();
             // await OnAdjustmentsChanged();
-           // OnEditOrAddChanged(false);
+            OnActivityEditingChanged(false);
             StateHasChanged();
         }
         catch (Exception ex) when (ex is BadRequestException or NotFoundException or SaveActivityException)
@@ -417,7 +423,7 @@
         {
            await ShrinkageApi.DeleteActivityForUserAsync(selectedActivity.Id, State.CurrentUser!.UserId, DateOnly.FromDateTime(selectedActivity.StartedAt.DateTime), TimeoutToken(Timeout));
             selectedActivity = null;
-          //  await OnAdjustmentsChanged();
+            OnActivityEditingChanged(false);
 
             StateHasChanged();
         }

@@ -75,8 +75,19 @@ namespace BlazorLayout.Pages.Components.Shrinkage.User;
     private ActivityTypeDto activeActivityType;
     private ActivityDto? newActivity;
 
+    /// <summary>
+    /// C’est un événement que Summary expose vers l’extérieur, pour dire au parent :
+    ///🔔 “Je suis en train d’éditer le Summary”
+    /// </summary>
     [Parameter, EditorRequired]
     public Action<bool> OnGlobalEditChanged { get; set; }
+
+    /// <summary>
+    /// Parametre pour desactiver tous les Buttons lorsquon Add - Edit ou Delete une Activite
+    /// </summary>
+    [Parameter, EditorRequired]
+    public bool IsActivityEditing { get; set; }
+
 
     [Parameter, EditorRequired]
     public Func<Task> OnAdjustmentsChanged { get; set; }
@@ -96,7 +107,7 @@ namespace BlazorLayout.Pages.Components.Shrinkage.User;
     /// Grace a ce AnySummaryEditing on va desactiver tous les Autres Boutons ds le Razor
     /// Si L'user clique sur le Bearbeiten de Freizeitausgleich et bien je desactive tous les autres
     /// </summary>
-    private bool AnySummaryEditing => isEditingPaidTimeOff || isEditingOvertime || isEditingVacationTime;
+    private bool AnySummaryEditing => isEditingPaidTimeOff || isEditingOvertime || isEditingVacationTime || IsActivityEditing;
 
     private bool IsTimerActive => TimerService.IsRunning || Activities.Any(a => a.StoppedAt == null);
 
@@ -107,6 +118,10 @@ namespace BlazorLayout.Pages.Components.Shrinkage.User;
 
 
 
+    /// <summary>
+    /// Summary expose un événement vers l’extérieur, que le parent doit fournir.
+    /// /// Le Timer est Lance ou non ici 
+    /// </summary>
 
     [Parameter, EditorRequired]
     public Action<bool> OnTimerStateChanged { get; set; }

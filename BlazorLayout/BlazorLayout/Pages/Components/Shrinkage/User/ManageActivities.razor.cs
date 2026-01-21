@@ -57,12 +57,11 @@ namespace BlazorLayout.Pages.Components.Shrinkage.User
         private bool IsReadOnly => (displayStatus is StatusDto.Transferred or StatusDto.Approved) || !string.IsNullOrWhiteSpace(errorMessage);
         private bool isTimerRunning;
         private bool isSummaryEditing;
-        private bool isAdding;
-        private bool isEditing;
-        private bool isEditingActivity;
 
-      
-     
+
+        private bool IsSummaryLocked => isTimerRunning || isSummaryEditing;
+
+
 
         private TimeSpan userPaidTime = TimeSpan.Zero;
         private TimeSpan userOvertime = TimeSpan.Zero;
@@ -228,8 +227,7 @@ namespace BlazorLayout.Pages.Components.Shrinkage.User
 
         private void ResetButtonsAndClearMessages()
         {
-            isEditing = false;
-            isAdding = false;
+            
             isTimerRunning = false;
             isSummaryEditing = false;
             errorMessage = null;
@@ -318,6 +316,16 @@ namespace BlazorLayout.Pages.Components.Shrinkage.User
                 if (ex.InnerException is HttpRequestException ex2 && ex2.GetReasonMessage(ex) is { } reason)
                     errorMessage += " " + reason;
             }
+        }
+
+        /// <summary>
+        /// le IsActivityEditing sera passer ds le Summary via cette variable
+        /// </summary>
+        private bool isActivityEditing;
+        private void HandleActivityEditingChanged(bool editing)
+        {
+            isActivityEditing = editing;
+            StateHasChanged();
         }
 
         private void HandleError(string? message)

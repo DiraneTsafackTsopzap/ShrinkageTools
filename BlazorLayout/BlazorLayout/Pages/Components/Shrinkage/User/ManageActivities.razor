@@ -118,7 +118,9 @@
                                                                 OnWarning="HandleWarning"
                                                                 OnErrorStateChanged="HandleError"
                                                                 ShrinkageDate="@ShrinkageDate"
-                                                                DefaultTeamId="State.CurrentUser!.TeamId!.Value"
+                                                            IsSummaryLocked="@IsSummaryLocked"
+                                                            OnActivityEditingChanged="HandleActivityEditingChanged"
+                                                            DefaultTeamId="State.CurrentUser!.TeamId!.Value"
                                                                 UserActivities="@UserActivities" />
                                                                 
                                                                 
@@ -136,7 +138,7 @@
                                          UserShrinkage=userShrinkage
                                          TargetDate="@ShrinkageDate"
                                          IsReadOnly="@IsReadOnly"
-                                         
+                                         IsActivityEditing="@isActivityEditing"
                                          OnWarning="HandleWarning"
                                          OnTimerStateChanged="HandleTimerStateChanged"
                                          OnGlobalEditChanged="HandleSummaryChanged"
