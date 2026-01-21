@@ -1,0 +1,26 @@
+﻿<textarea id="@Id"
+          class="form-control form-control-sm textarea-noscroll @CssClass"
+          style="@Style"
+          rows="@Rows"
+          readonly>@Value</textarea>
+
+@code {
+    [Parameter] public string? Value { get; set; }
+    [Parameter] public string? Id { get; set; }
+    [Parameter] public int Rows { get; set; } = 8;
+
+    // Pour gérer width / height sans inline obligatoire
+    [Parameter] public string? Style { get; set; }
+
+    // Pour ajouter des classes si besoin
+    [Parameter] public string? CssClass { get; set; }
+}
+
+
+<style>
+    .textarea-noscroll {
+        resize: none;
+        overflow: hidden;
+    }
+
+</style>

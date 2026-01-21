@@ -1,0 +1,39 @@
+﻿<div class="row align-items-start mb-1 flex-nowrap">
+
+    <!-- Label -->
+    <label class="col-auto form-label text-end small label-col">
+        @Label :
+    </label>
+
+    <!-- Input or TextArea -->
+    <div class="col-auto px-1">
+        @if (InputContent != null)
+        {
+            @InputContent
+        }
+        else if (TextAreaContent != null)
+        {
+            @TextAreaContent
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public string Label { get; set; } = default!;
+
+    [Parameter]
+    public RenderFragment? InputContent { get; set; }
+
+    [Parameter]
+    public RenderFragment? TextAreaContent { get; set; }
+}
+
+<style>
+    .label-col {
+        min-width: 130px;
+        max-width: 180px;
+        white-space: nowrap;
+    }
+
+</style>
