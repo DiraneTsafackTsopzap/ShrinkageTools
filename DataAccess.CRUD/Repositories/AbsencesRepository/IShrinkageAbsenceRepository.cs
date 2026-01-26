@@ -17,7 +17,11 @@ namespace DataAccess.CRUD.Repositories.AbsencesRepository;
 
         Task<List<ShrinkageAbsenceDataModel>> GetAllAbsenceWithinDateRange(Guid userId, DateOnly startDate, DateOnly endDate, CancellationToken token);
 
-    Task<bool> DeleteAbsenceById(Guid id, Guid deletedBy, CancellationToken token);
+        Task<bool> DeleteAbsenceById(Guid id, Guid deletedBy, CancellationToken token);
+
+        Task<bool> DeleteById(Guid id, Guid deletedBy, CancellationToken token);
+
+    Task<ShrinkageAbsenceDataModel?> GetAbsenceByUserIdAndDate(Guid userId, DateOnly shrinkageDate, CancellationToken cancellationToken);
 
 }
 

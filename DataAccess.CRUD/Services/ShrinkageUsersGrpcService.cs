@@ -6,7 +6,9 @@ using DataAccess.CRUD.Extensions;
 using DataAccess.CRUD.Modeles;
 using DataAccess.CRUD.Repositories;
 using DataAccess.CRUD.Repositories.AbsencesRepository;
+using DataAccess.CRUD.Repositories.Holidays;
 using DataAccess.CRUD.Repositories.TeamsRepository;
+using DataAccess.CRUD.Repositories.UserDailyRepository;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using GrpcShrinkageServiceTraining.Protobuf;
@@ -21,13 +23,25 @@ namespace DataAccess.CRUD.Services
         private readonly IShrinkageUserRepository _shrinkageUsersRepository;
         private readonly IShrinkageTeamsRepository _shrinkageTeamsRepository;
         private readonly IShrinkageAbsenceRepository _shrinkageAbsenceRepository;
+        private readonly IShrinkageTeamPublicHolidaysRepository _shrinkageTeamPublicHolidaysRepository;
+        private readonly IShrinkageUserDailyValuesRepository _shrinkageUserDailyValuesRepository;
+      
         public ShrinkageUsersGrpcService(IShrinkageTeamsRepository shrinkageTeamsRepository, 
                                          IShrinkageUserRepository shrinkageUsersRepository ,
-                                         IShrinkageAbsenceRepository shrinkageAbsenceRepository)
+                                         IShrinkageAbsenceRepository shrinkageAbsenceRepository,
+                                         IShrinkageUserDailyValuesRepository shrinkageUserDailyValuesRepository,
+                                         IShrinkageTeamPublicHolidaysRepository shrinkageTeamPublicHolidaysRepository
+
+
+
+
+            )
         {
             _shrinkageUsersRepository = shrinkageUsersRepository;
             _shrinkageTeamsRepository = shrinkageTeamsRepository;
             _shrinkageAbsenceRepository = shrinkageAbsenceRepository;
+            _shrinkageTeamPublicHolidaysRepository = shrinkageTeamPublicHolidaysRepository;
+            _shrinkageUserDailyValuesRepository = shrinkageUserDailyValuesRepository;
         }
 
 
@@ -739,6 +753,207 @@ namespace DataAccess.CRUD.Services
 
             return new DeleteAbsenceByIdResponse();
         }
+
+        // Save User Daily Values
+        public override async Task<SaveUserDailyValuesResponse> SaveUserDailyValues(SaveUserDailyValuesRequest request, ServerCallContext context)
+        {
+            if (!request.UserId.TryParseToGuidNotNullOrEmpty(out var userId))
+            {
+                throw RpcExceptions.InvalidArgument($"Error with correlation id {request.CorrelationId} invalid UserId: {userId}");
+            }
+
+            if (!request.TeamId.TryParseToGuidNotNullOrEmpty(out var teamId))
+            {
+                throw RpcExceptions.InvalidArgument($"Error with correlation id {request.CorrelationId} invalid TeamId: {teamId}");
+            }
+
+            if (request.ShrinkageDate is null)
+            {
+                throw RpcExceptions.InvalidArgument($"Error with correlation id {request.CorrelationId} invalid shrinkage date : {request.ShrinkageDate}");
+            }
+
+            var user = await _shrinkageUsersRepository.GetUserById(userId, context.CancellationToken);
+            if (user is null)
+            {
+                throw RpcExceptions.NotFound($"Error with correlation id {request.CorrelationId} user with Id {request.UserId} not found");
+            }
+
+            var team = await _shrinkageTeamsRepository.GetTeamById(teamId, context.CancellationToken);
+            if (team is null)
+            {
+                throw RpcExceptions.NotFound($"Error with correlation id {request.CorrelationId} team with Id {request.TeamId} not found");
+            }
+
+            var shrinkageDate = request.ShrinkageDate.FromTimeStampToDate();
+            var cancellationToken = context.CancellationToken;
+            var today = DateTime.UtcNow;
+
+            var existingAbsences = await _shrinkageAbsenceRepository.GetAbsenceByUserIdAndDate(userId, shrinkageDate, cancellationToken);
+
+            var publicHolidays = await _shrinkageTeamPublicHolidaysRepository.GetTeamsPublicHolidaysByTeamId(user.TeamId.Value, cancellationToken);
+            var publicHolidayDates = publicHolidays.Select(x => x.AffectedDay).ToList();
+            var userDailyValues = await _shrinkageUserDailyValuesRepository.GetUserDailyValuesByUserIdAndDate(userId, shrinkageDate, cancellationToken);
+
+            using var scope = new TransactionScope(TransactionScopeOption.Required, new TransactionOptions { IsolationLevel = IsolationLevel.ReadCommitted, Timeout = TimeSpan.FromSeconds(100) }, TransactionScopeAsyncFlowOption.Enabled);
+            if (existingAbsences != null)
+            {
+                //update absence
+                var absenceStartDate = existingAbsences.StartDate;
+                var absenceEndDate = existingAbsences.EndDate;
+
+                if (absenceStartDate == absenceEndDate || absenceStartDate == shrinkageDate)
+                {
+                    await _shrinkageAbsenceRepository.DeleteById(existingAbsences.Id, userId, cancellationToken);
+                }
+                else
+                {
+                    await _shrinkageAbsenceRepository.UpdateAbsence(new ShrinkageAbsenceDataModel
+                    {
+                        Id = existingAbsences.Id,
+                        UpdatedAt = DateTime.UtcNow,
+                        UpdatedBy = userId,
+                        UserId = existingAbsences.UserId,
+                        TeamId = existingAbsences.TeamId,
+                        AbsenceType = existingAbsences.AbsenceType,
+                        StartDate = existingAbsences.StartDate,
+                        EndDate = shrinkageDate.AddDays(-1),
+                    }, cancellationToken);
+                }
+
+                //update user daily value
+                var userDailyValuesList = await _shrinkageUserDailyValuesRepository.GetUserDailyValuesByUserIdAndDateRange(userId, shrinkageDate, existingAbsences.EndDate, cancellationToken);
+
+                Dictionary<DateOnly, ShrinkageUserDailyValuesDataModel> userDailyValuesForAbsenceDays = userDailyValuesList.ToDictionary(x => x.ShrinkageDate, x => x);
+
+                for (var date = shrinkageDate; date <= existingAbsences!.EndDate; date = date.AddDays(+1))
+                {
+                    if (userDailyValuesForAbsenceDays.TryGetValue(date, out var dailyValue))
+                    {
+                        if ((publicHolidayDates.Contains(date) || date.DayOfWeek == DayOfWeek.Saturday || date.DayOfWeek == DayOfWeek.Sunday) && date != shrinkageDate)
+                        {
+                            var deletedDailyValue = new ShrinkageUserDailyValuesDataModel { Id = dailyValue.Id, DeletedAt = today.ToUniversalTime(), DeletedBy = userId, };
+                            await _shrinkageUserDailyValuesRepository.DeleteById(deletedDailyValue, cancellationToken);
+                            continue;
+                        }
+
+                        var model = new ShrinkageUserDailyValuesDataModel
+                        {
+                            Id = dailyValue.Id,
+                            UserId = dailyValue.UserId,
+                            TeamId = dailyValue.TeamId,
+                            ShrinkageDate = dailyValue.ShrinkageDate,
+                            PaidTime = dailyValue.PaidTime,
+                            VacationTime = dailyValue.VacationTime,
+                            PaidTimeOff = dailyValue.PaidTimeOff,
+                            Overtime = dailyValue.Overtime,
+                            UpdatedAt = today.ToUniversalTime(),
+                            UpdatedBy = userId,
+                            Status = request.Status.ConvertFromApiStatus(),
+                        };
+                        await SetRequestTypeValue(request, model, cancellationToken);
+                        await _shrinkageUserDailyValuesRepository.UpdateById(model, cancellationToken);
+                    }
+
+                    else
+                    {
+                        if (date > DateOnly.FromDateTime(today) || (
+                                (publicHolidayDates.Contains(date) || date.DayOfWeek == DayOfWeek.Saturday || date.DayOfWeek == DayOfWeek.Sunday)
+                                && date != shrinkageDate))
+                        {
+                            continue;
+                        }
+
+                        var model = new ShrinkageUserDailyValuesDataModel
+                        {
+                            Id = Guid.NewGuid(),
+                            UserId = userId,
+                            TeamId = teamId,
+                            ShrinkageDate = date,
+                            CreatedAt = DateTime.UtcNow,
+                            CreatedBy = userId,
+                            Status = request.Status.ConvertFromApiStatus(),
+                        };
+                        await SetRequestTypeValue(request, model, cancellationToken);
+                        await _shrinkageUserDailyValuesRepository.Create(model, cancellationToken);
+                    }
+                }
+            }
+
+            else if (userDailyValues != null)
+            {
+                var model = new ShrinkageUserDailyValuesDataModel
+                {
+                    Id = userDailyValues.Id,
+                    UserId = userDailyValues.UserId,
+                    TeamId = userDailyValues.TeamId,
+                    ShrinkageDate = userDailyValues.ShrinkageDate,
+                    PaidTime = userDailyValues.PaidTime,
+                    VacationTime = userDailyValues.VacationTime,
+                    PaidTimeOff = userDailyValues.PaidTimeOff,
+                    Overtime = userDailyValues.Overtime,
+                    UpdatedAt = today.ToUniversalTime(),
+                    UpdatedBy = userId,
+                    Status = request.Status.ConvertFromApiStatus(),
+                };
+                await SetRequestTypeValue(request, model, cancellationToken);
+                await _shrinkageUserDailyValuesRepository.UpdateById(model, cancellationToken);
+            }
+
+            else
+            {
+                var model = new ShrinkageUserDailyValuesDataModel
+                {
+                    Id = Guid.NewGuid(),
+                    UserId = userId,
+                    TeamId = teamId,
+                    ShrinkageDate = shrinkageDate,
+                    CreatedAt = DateTime.UtcNow,
+                    CreatedBy = userId,
+                    Status = request.Status.ConvertFromApiStatus(),
+                };
+                await SetRequestTypeValue(request, model, cancellationToken);
+                await _shrinkageUserDailyValuesRepository.Create(model, cancellationToken);
+            }
+
+            scope.Complete();
+            return new SaveUserDailyValuesResponse();
+        }
+
+
+        private async Task SetRequestTypeValue(SaveUserDailyValuesRequest request, ShrinkageUserDailyValuesDataModel model, CancellationToken cancellationToken)
+        {
+            switch (request.RequestTypeCase)
+            {
+                case SaveUserDailyValuesRequest.RequestTypeOneofCase.Overtime:
+                    model.Overtime = request.Overtime.ToTimeSpan().TotalMinutes;
+                    break;
+                case SaveUserDailyValuesRequest.RequestTypeOneofCase.PaidTimeOff:
+                    model.PaidTimeOff = request.PaidTimeOff.ToTimeSpan().TotalMinutes;
+                    break;
+                case SaveUserDailyValuesRequest.RequestTypeOneofCase.Vacation:
+                    model.VacationTime = request.Vacation.ToTimeSpan().TotalMinutes;
+                    break;
+                case SaveUserDailyValuesRequest.RequestTypeOneofCase.None:
+                    var paidTime = await _shrinkageUsersRepository.GetPaidTimeByUserIdAndDate(request.UserId.ToGuid(), request.ShrinkageDate.FromTimeStampToDate(), cancellationToken);
+                    model.PaidTime = paidTime;
+                    break;
+                default:
+                    throw RpcExceptions.InvalidArgument($"Error with correlation id {request.CorrelationId} no valid request type provided.");
+            }
+        }
+
+        // GetPublic Holidays By Team Id
+        public override async Task<GetPublicHolidaysByTeamIdResponse> GetPublicHolidaysByTeamId(GetPublicHolidaysByTeamIdRequest request, ServerCallContext context)
+        {
+            if (!request.TeamId.TryParseToGuidNotNullOrEmpty(out var teamId))
+            {
+                throw RpcExceptions.InvalidArgument($"Error with correlation id {request.CorrelationId} invalid TeamId: {teamId}");
+            }
+
+            var publicHolidays = await _shrinkageTeamPublicHolidaysRepository.GetTeamsPublicHolidaysByTeamId(teamId, context.CancellationToken);
+            return new GetPublicHolidaysByTeamIdResponse { PublicHolidays = { publicHolidays.Select(x => new PublicHoliday { Id = x.Id, Title = x.Title, Date = NormalizeUtc(x.AffectedDay.ToDateTime(TimeOnly.MinValue)).ToTimestamp(), }) } };
+        }
+
     }
 }
 

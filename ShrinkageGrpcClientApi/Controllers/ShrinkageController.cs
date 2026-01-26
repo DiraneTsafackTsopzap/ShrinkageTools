@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System;
 
+// Lancer d'abord le service gRPC ShrinkageGrpcServiceTraining avant de lancer cette API client
 namespace ShrinkageGrpcClientApi.Controllers
 {
     [Route("api/[controller]")]
@@ -458,9 +459,93 @@ namespace ShrinkageGrpcClientApi.Controllers
                 throw new BadHttpRequestException("Failed to delete absence", StatusCodes.Status500InternalServerError, ex);
             }
         }
+        /// <summary>
+        /// Methode Post : http://localhost:5000/api/shrinkage/save-user-daily-values
+        /// {
+        /// "correlationId": "e4d1a00f-3f56-44cf-85b9-5f5f4148a301",
+        ///"userId": "b4e5c1a9-8f72-4d6b-9a1c-3e7f5d0b2a66",   // Le UserId doit exister dans la base De Donnees
+        ///"teamId": "c1f2b9d4-0c64-4c89-9d7b-8e91fcb6e7b2",    // Le TeamId doit exister dans la base De Donnees
+        ///"shrinkageDate": "2026-01-26",                      // La Date d'ajoudhui
+        ///"overtime": "02:00:00",                   // Optionnel , Juste le Vaction , ou Overtime , ou PaidTimeOff , ou PaidTime
+        ///"status": 2                                // regarder ds le StatusDto Enum
+        ///}
+        /// 
+        /// 
+        /// 
+        /// <returns></returns>
 
+        [HttpPost("save-user-daily-values")]
+        public async Task SaveUserDailyValues([FromBody] SaveUserDailyValuesRequest_M input, CancellationToken cancellationToken)
+        {
+            using var __ = logger.BeginScope(new Dictionary<string, object>
+            {
+                ["@Request"] = input,
+            });
+            try
+            {
+                var grpcRequest = GrpcMapper.MapToSaveUserDailyValuesRequest(input);
+                await _grpcClient.SaveUserDailyValuesAsync(grpcRequest, cancellationToken: cancellationToken);
+            }
+            catch (RpcException ex) when (ex.StatusCode == global::Grpc.Core.StatusCode.InvalidArgument)
+            {
+                logger.LogError(ex, "Failed to save user daily values");
+                throw new BadHttpRequestException(ex.Message, StatusCodes.Status400BadRequest);
+            }
+            catch (RpcException ex) when (ex.StatusCode == global::Grpc.Core.StatusCode.NotFound)
+            {
+                logger.LogError(ex, "Failed to save user daily values");
+                throw new BadHttpRequestException(ex.Message, StatusCodes.Status404NotFound);
+            }
+            catch (RpcException ex) when (ex.StatusCode == global::Grpc.Core.StatusCode.AlreadyExists)
+            {
+                logger.LogError(ex, "Failed to save user daily values");
+                throw new BadHttpRequestException(ex.Message, StatusCodes.Status409Conflict);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Failed to save user daily values");
+                throw new BadHttpRequestException("Failed to save user daily values", StatusCodes.Status500InternalServerError, ex);
+            }
+        }
 
+        // Implementation de Public Holidays si necessaire
+        /// <summary>
+        /// http://localhost:5000/api/shrinkage/public-holidays?teamId=c1f2b9d4-0c64-4c89-9d7b-8e91fcb6e7b2&correlationId=e4d1a00f-3f56-44cf-85b9-5f5f4148a301
+        ///
+        /// </summary>
+        
+        [HttpGet("public-holidays")]
+        public async Task<IReadOnlyList<PublicHolidayDto>> GetPublicHolidaysByTeamId([FromQuery] Guid teamId, [FromQuery] Guid correlationId, CancellationToken cancellationToken)
+        {
+            using var __ = logger.BeginScope(new Dictionary<string, object>
+            {
+                ["CorrelationId"] = correlationId,
+                ["TeamLeadId"] = teamId,
+            });
+            try
+            {
+                var request = new GetPublicHolidaysByTeamIdRequest()
+                {
+                    CorrelationId = correlationId,
+                    TeamId = teamId,
+                };
 
+                var response = await _grpcClient.GetPublicHolidaysByTeamIdAsync(request, cancellationToken: cancellationToken);
+
+                var publicHolidays = GrpcMapper.MapPublicHolidays(response);
+                return publicHolidays;
+            }
+            catch (RpcException ex) when (ex.StatusCode == global::Grpc.Core.StatusCode.InvalidArgument)
+            {
+                logger.LogError(ex, "Failed to load public holidays");
+                throw new BadHttpRequestException(ex.Message, StatusCodes.Status400BadRequest);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Failed to load public holidays");
+                throw new BadHttpRequestException("Failed to load public holidays", StatusCodes.Status500InternalServerError, ex);
+            }
+        }
 
     }
 }

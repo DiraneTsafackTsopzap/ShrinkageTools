@@ -1,5 +1,6 @@
 ﻿using BlazorLayout.Extensions;
 using BlazorLayout.Modeles;
+using BlazorLayout.ModelRequest;
 using BlazorLayout.StateManagement;
 
 namespace BlazorLayout.Stores;
@@ -126,6 +127,55 @@ public sealed partial class UserShrinkageStore : StoreBase
         }
 
 
+    }
+
+    public void UpdateUserDailyValue(SaveUserDailyValuesRequest_M dailyValue)
+    {
+        if (!__UsersShrinkages.TryGetValue(dailyValue.UserId, out var userShrinkages))
+            throw new InvalidOperationException("User shrinkage for this user were not initialized");
+
+        if (!userShrinkages.TryGetValue(dailyValue.ShrinkageDate, out var userShrinkage))
+            throw new InvalidOperationException("User shrinkage for this shrinkage date were not initialized");
+
+        if (dailyValue.PaidTime.HasValue)
+        {
+            userShrinkage = userShrinkage with
+            {
+                PaidTime = dailyValue.PaidTime ?? TimeSpan.Zero,
+            };
+        }
+
+        if (dailyValue.PaidTimeOff.HasValue)
+        {
+            userShrinkage = userShrinkage with
+            {
+                PaidTimeOff = dailyValue.PaidTimeOff ?? TimeSpan.Zero,
+            };
+        }
+
+        if (dailyValue.Overtime.HasValue)
+        {
+            userShrinkage = userShrinkage with
+            {
+                Overtime = dailyValue.Overtime ?? TimeSpan.Zero,
+            };
+        }
+
+        if (dailyValue.VacationTime.HasValue)
+        {
+            userShrinkage = userShrinkage with
+            {
+                VacationTime = dailyValue.VacationTime ?? TimeSpan.Zero,
+            };
+        }
+
+        UsersShrinkages = new Dictionary<Guid, IReadOnlyDictionary<DateOnly, UserShrinkageDto>>(__UsersShrinkages)
+        {
+            [dailyValue.UserId] = new Dictionary<DateOnly, UserShrinkageDto>(userShrinkages)
+            {
+                [dailyValue.ShrinkageDate] = userShrinkage,
+            },
+        };
     }
 }
 

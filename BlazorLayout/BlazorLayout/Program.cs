@@ -50,6 +50,7 @@ builder.Services.AddSingleton<UserShrinkageStore>();
 builder.Services.AddSingleton<UserDailySummaryStore>();
 builder.Services.AddSingleton<UserShrinkageStore>();
 builder.Services.AddSingleton<UserAbsencesStore>();
+builder.Services.AddSingleton<PublicHolidaysStore>();
 builder.Services.AddSingleton<ShrinkageApi>();
 
 builder.Services.AddScoped<ActivityTimerService>();

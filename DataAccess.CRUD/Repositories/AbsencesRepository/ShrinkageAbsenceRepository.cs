@@ -211,5 +211,58 @@ WHERE a.user_id = @UserId
         return result.ToList();
     }
 
+    public async Task<ShrinkageAbsenceDataModel?> GetAbsenceByUserIdAndDate(Guid userId, DateOnly date, CancellationToken token)
+    {
+        const string sql = @$"
+SELECT 
+    a.id            AS {nameof(ShrinkageAbsenceDataModel.Id)},
+    a.absence_type  AS {nameof(ShrinkageAbsenceDataModel.AbsenceType)},
+    a.user_id       AS {nameof(ShrinkageAbsenceDataModel.UserId)},
+    a.team_id       AS {nameof(ShrinkageAbsenceDataModel.TeamId)},
+    a.start_date    AS {nameof(ShrinkageAbsenceDataModel.StartDate)},
+    a.end_date      AS {nameof(ShrinkageAbsenceDataModel.EndDate)}
+FROM shrinkage_user_absences a
+WHERE a.user_id = @UserId
+  AND a.deleted_at IS NULL
+  AND a.start_date <= @Date
+  AND a.end_date   >= @Date;
+";
+
+        var parameters = new
+        {
+            UserId = userId,
+            Date = date
+        };
+
+        await using var connection = await GetOpenConnectionAsync(token);
+
+        return await connection.QuerySingleOrDefaultAsync<ShrinkageAbsenceDataModel>(sql, parameters);
+    }
+
+
+    public async Task<bool> DeleteById(Guid id, Guid deletedBy, CancellationToken token)
+    {
+        const string sql = @$"
+UPDATE shrinkage_user_absences 
+SET deleted_at = current_timestamp,
+    deleted_by = @DeletedBy
+WHERE id = @Id;
+";
+
+        var parameters = new
+        {
+            Id = id,
+            DeletedBy = deletedBy
+        };
+
+        await using var connection = await GetOpenConnectionAsync(token);
+
+        var result = await connection.ExecuteAsync(sql, parameters);
+
+        return result > 0;
+    }
+
+
+
 }
 

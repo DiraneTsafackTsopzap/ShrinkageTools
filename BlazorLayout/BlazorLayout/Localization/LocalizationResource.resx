@@ -231,6 +231,9 @@
   <data name="shrinkage_error_activity_time_missing" xml:space="preserve">
     <value>Start or End time is missing</value>
   </data>
+  <data name="shrinkage_error_fetching_public_holiday" xml:space="preserve">
+    <value>Failed to get public holidays.</value>
+  </data>
   <data name="shrinkage_error_get_user_email" xml:space="preserve">
     <value>Failed to get User</value>
   </data>
@@ -245,6 +248,12 @@
   </data>
   <data name="shrinkage_error_save_absence_conflict" xml:space="preserve">
     <value>Failed to save absence. Conflict.</value>
+  </data>
+  <data name="shrinkage_error_save_user_daily_value" xml:space="preserve">
+    <value>Failed to save user daily values.</value>
+  </data>
+  <data name="shrinkage_error_save_user_daily_value_conflict" xml:space="preserve">
+    <value>Failed to save user daily values. Conflict. User has an active absence for this date.</value>
   </data>
   <data name="shrinkage_error_unexpected" xml:space="preserve">
     <value>Unexpected error occured</value>

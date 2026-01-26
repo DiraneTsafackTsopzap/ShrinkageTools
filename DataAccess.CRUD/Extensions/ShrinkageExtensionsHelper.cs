@@ -28,17 +28,20 @@ public static class ShrinkageExtensionsHelper
         };
     }
 
-    public static Status ToGrpcStatus(this Status status)
+    public static Status ToGrpcStatus(this StatusDto status)
     {
         return status switch
         {
-            Status.Pending => Status.Pending,
-            Status.Transferred => Status.Transferred,
-            Status.Approved => Status.Approved,
-            Status.Rejected => Status.Rejected,
-            _ => Status.Unspecified,
+            StatusDto.Unspecified => Status.Unspecified,
+            StatusDto.Open => Status.Pending,
+            StatusDto.Transferred => Status.Transferred,
+            StatusDto.Rejected => Status.Rejected,
+            StatusDto.Approved => Status.Approved,
+            StatusDto.Missing => Status.Missing,
+            _ => throw new InvalidEnumArgumentException(nameof(status))
         };
     }
+
 
 
     // Attention ici :  Conversion de Status (gRPC) vers StatusDto

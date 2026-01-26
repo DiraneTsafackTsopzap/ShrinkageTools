@@ -27,6 +27,7 @@ namespace BlazorLayout.Gateways
                                UserShrinkageStore userShrinkageStore,
                                UserByEmailStore userByEmailStore,
                                 UserDailySummaryStore userDailySummaryStore,
+                                PublicHolidaysStore publicHolidaysStore,
                                 UserAbsencesStore userAbsencesStore,
                                ILogger<ShrinkageApi> logger)
     {
@@ -45,11 +46,14 @@ namespace BlazorLayout.Gateways
         // User Absences Dictionary
         private readonly Dictionary<IReadOnlyList<Guid>, IdempotentApiRequest> ensureGetUserAbsences = new();
 
+        // Public Holidays by TeamId Dictionary
+        private readonly Dictionary<Guid, IdempotentApiRequest> ensureGetPublicHolidaysByTeamId = new();
+
 
         /// <summary>
         ///  Appel Get : EnsureGetUserByEmail
         /// </summary>
-     
+
         public ValueTask EnsureGetUserByEmail(string userMail, bool forceRefresh, CancellationToken cancellationToken)
         {
             var request = ensureUserByEmail.GetOrAdd(userMail, () => new IdempotentApiRequest(async token =>
@@ -273,7 +277,47 @@ namespace BlazorLayout.Gateways
             return request.Run(cancellationToken);
         }
 
+        public ValueTask EnsureGetPublicHolidaysByTeamId(Guid teamId, bool forceRefresh, CancellationToken cancellationToken)
+        {
+            var request = ensureGetPublicHolidaysByTeamId.GetOrAdd(teamId, () => new IdempotentApiRequest(async token =>
+            {
+                var correlationId = Guid.NewGuid();
+                using var __ = logger.BeginScope(new Dictionary<string, object>
+                {
+                    ["CorrelationId"] = correlationId,
+                    ["TeamId"] = teamId,
+                });
+                try
+                {
+                    var parameters = new Dictionary<string, string?>
+                    {
+                        ["correlationId"] = correlationId.ToString(),
+                        ["teamId"] = teamId.ToString(),
+                    };
+                    var url = QueryHelpers.AddQueryString("api/shrinkage/public-holidays", parameters);
+                    var result = await HttpClient.GetFromJsonAsyncNotNull<IReadOnlyList<PublicHolidayDto>>(url, token);
+                    publicHolidaysStore.InitializePublicHolidays(teamId, result);
+                }
+                catch (HttpRequestException ex) when (ex is { StatusCode: HttpStatusCode.BadRequest })
+                {
+                    logger.LogError(ex, "Failed to get public holidays by teamId");
+                    throw new BadRequestException(ex, correlationId);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "Failed to get public holidays by teamId");
+                    throw;
+                }
+            }));
 
+            if (forceRefresh)
+            {
+                request.Reset();
+                publicHolidaysStore.Reset();
+            }
+
+            return request.Run(cancellationToken);
+        }
 
 
 
@@ -477,8 +521,8 @@ namespace BlazorLayout.Gateways
                 response.EnsureSuccessStatusCode();
                 userAbsencesStore.Remove(userId, id);
                 userShrinkageStore.RemoveUserShrinkage(userId, startDate, endDate);
-                //var publicHolidays = publicHolidaysStore.GetPublicHolidaysForTeamId(teamId);
-                //userDailySummaryStore.RemoveAbsence(startDate, endDate, publicHolidays);
+                var publicHolidays = publicHolidaysStore.GetPublicHolidaysForTeamId(teamId);
+                userDailySummaryStore.RemoveAbsence(startDate, endDate, publicHolidays);
             }
             catch (HttpRequestException ex) when (ex is { StatusCode: HttpStatusCode.BadRequest })
             {
@@ -500,6 +544,49 @@ namespace BlazorLayout.Gateways
         public void RemoveIdempotencyRequest(Guid userId, DateOnly date)
         {
             ensureGetUserShrinkage[userId].Remove(date);
+        }
+
+        public async Task SaveUserDailyValuesForUserAsync(SaveUserDailyValuesRequest_M dailyValues, CancellationToken cancellationToken)
+        {
+            await SaveUserDailyValuesInAdminAsync(dailyValues, cancellationToken);
+            if (dailyValues.PaidTimeOff.HasValue || dailyValues.Overtime.HasValue || dailyValues.VacationTime.HasValue)
+            {
+                userShrinkageStore.UpdateUserDailyValue(dailyValues);
+            }
+
+            var publicHolidays = publicHolidaysStore.GetPublicHolidaysForTeamId(dailyValues.TeamId);
+            userDailySummaryStore.UpdateStatusBasedOnDate(dailyValues.ShrinkageDate, publicHolidays);
+        }
+        public async Task SaveUserDailyValuesInAdminAsync(SaveUserDailyValuesRequest_M request, CancellationToken cancellationToken)
+        {
+            using var __ = logger.BeginScope(new Dictionary<string, object>
+            {
+                ["@Request"] = request,
+            });
+            try
+            {
+                await HttpClient.PostAsJsonAsync("api/shrinkage/save-user-daily-values", request, cancellationToken);
+            }
+            catch (HttpRequestException ex) when (ex is { StatusCode: HttpStatusCode.BadRequest })
+            {
+                logger.LogError(ex, "Failed to save user daily value.");
+                throw new BadRequestException(ex, request.CorrelationId);
+            }
+            catch (HttpRequestException ex) when (ex is { StatusCode: HttpStatusCode.NotFound })
+            {
+                logger.LogError(ex, "Failed to save user daily value.");
+                throw new NotFoundException(ex, request.CorrelationId);
+            }
+            catch (HttpRequestException ex) when (ex is { StatusCode: HttpStatusCode.Conflict })
+            {
+                logger.LogError(ex, "Failed to save user daily value.");
+                throw new ConflictException(ex, request.CorrelationId);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Failed to save user daily value.");
+                throw new SaveUserDailyValuesException(ex, request.CorrelationId);
+            }
         }
     }
 }

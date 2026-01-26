@@ -81,7 +81,7 @@ namespace BlazorLayout.Pages
 
                 isUserLoaded = true;
 
-            
+         
 
 
                 if (State.CurrentUser!.TeamId is null)
@@ -90,7 +90,7 @@ namespace BlazorLayout.Pages
                 }
                 else
                 {
-                   // Afficher GetPublicHolidays();
+                  await GetPublicHolidays();
                 }
             }
             catch (GetUserByEmailException ex)
@@ -108,6 +108,23 @@ namespace BlazorLayout.Pages
 
 
         }
+
+
+        private async Task GetPublicHolidays()
+        {
+            try
+            {
+                await ShrinkageApi.EnsureGetPublicHolidaysByTeamId(State.CurrentUser!.TeamId.Value, false, TimeoutToken(Timeout));
+            }
+            catch (OperationCanceledException) when (IsDisposing) { }
+            catch (Exception ex)
+            {
+                errorMessage = Localizer["shrinkage_error_fetching_public_holiday"];
+                if (ex.InnerException is HttpRequestException ex2 && ex2.GetReasonMessage(ex) is { } reason)
+                    errorMessage += " " + reason;
+            }
+        }
+
     }
 }
 

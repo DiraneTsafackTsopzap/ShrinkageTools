@@ -28,6 +28,9 @@ namespace BlazorLayout.Pages.Components.Shrinkage.User;
     [Parameter, EditorRequired]
     public TimeSpan CurrentVacationTime { get; set; }
 
+    [Inject]
+    private ShrinkageApi ShrinkageApi { get; init; } = null!;
+
     [Parameter, EditorRequired]
     public TimeSpan CurrentPaidTimeOff { get; set; }
 
@@ -117,6 +120,7 @@ namespace BlazorLayout.Pages.Components.Shrinkage.User;
 
     private Guid? selectedTeamId;
 
+    private const int Timeout = 30_000;
     private string GetTeamName()
     {
         var team = State.Teams.First(t => t.Id == State.CurrentUser?.TeamId).Name;
@@ -231,6 +235,48 @@ namespace BlazorLayout.Pages.Components.Shrinkage.User;
         }
     }
 
+    protected override void OnParametersSet()
+    {
+        if (IsReadOnly)
+        {
+            isEditingPaidTimeOff = false;
+            isEditingOvertime = false;
+            isEditingVacationTime = false;
+        }
+
+        if (!isEditingPaidTimeOff) paidTimeOffInput = CurrentPaidTimeOff.FormatTimeSpanToHhMm();
+        if (!isEditingOvertime) overtimeInput = CurrentOvertime.FormatTimeSpanToHhMm();
+        if (!isEditingVacationTime) vacationTimeInput = CurrentVacationTime.FormatTimeSpanToHhMm();
+
+        RestoreTimerIfRunning();
+    }
+    private void RestoreTimerIfRunning()
+    {
+        if (TimerService.IsRunning && TimerService.CurrentActivity is not null)
+        {
+            activeActivityType = TimerService.ActiveActivityType;
+            newActivity = TimerService.CurrentActivity;
+            return;
+        }
+
+        var openActivity = Activities.FirstOrDefault(a => a.StoppedAt == null);
+        if (openActivity != null)
+        {
+            activeActivityType = openActivity.ActivityType;
+            newActivity = openActivity;
+
+            if (!TimerService.IsRunning)
+            {
+                TimerService.ResumeFrom(openActivity.StartedAt.DateTime.TimeOfDay);
+            }
+        }
+        else
+        {
+            TimerService.Reset();
+            activeActivityType = ActivityTypeDto.Unspecified;
+            newActivity = null;
+        }
+    }
     private void FormatPaidTimeOffOnBlur()
     {
         if (!isEditingPaidTimeOff || IsReadOnly)
@@ -436,7 +482,7 @@ namespace BlazorLayout.Pages.Components.Shrinkage.User;
         };
         try
         {
-            //await ShrinkageApi.SaveUserDailyValuesForUserAsync(request, TimeoutToken(Timeout));
+            await ShrinkageApi.SaveUserDailyValuesForUserAsync(request, TimeoutToken(Timeout));
             CurrentPaidTimeOff = newPaidTimeOff;
             isEditingPaidTimeOff = false;
             paidTimeOffInput = CurrentPaidTimeOff.FormatTimeSpanToHhMm();
@@ -492,7 +538,7 @@ namespace BlazorLayout.Pages.Components.Shrinkage.User;
         };
         try
         {
-           // await ShrinkageApi.SaveUserDailyValuesForUserAsync(request, TimeoutToken(Timeout));
+            await ShrinkageApi.SaveUserDailyValuesForUserAsync(request, TimeoutToken(Timeout));
             CurrentOvertime = newOvertime;
             isEditingOvertime = false;
             overtimeInput = CurrentOvertime.FormatTimeSpanToHhMm();
@@ -560,7 +606,7 @@ namespace BlazorLayout.Pages.Components.Shrinkage.User;
         };
         try
         {
-            //await ShrinkageApi.SaveUserDailyValuesForUserAsync(request, TimeoutToken(Timeout));
+            await ShrinkageApi.SaveUserDailyValuesForUserAsync(request, TimeoutToken(Timeout));
             CurrentVacationTime = newVacationTime;
             isEditingVacationTime = false;
             vacationTimeInput = CurrentVacationTime.FormatTimeSpanToHhMm();

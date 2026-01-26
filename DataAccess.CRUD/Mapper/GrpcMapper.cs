@@ -209,6 +209,46 @@ namespace DataAccess.CRUD.Mapper
                 UpdatedBy = x.UpdatedBy.NullIfEmpty(),
             }).ToList();
         }
+
+        public static List<PublicHolidayDto> MapPublicHolidays(GetPublicHolidaysByTeamIdResponse apiResponse)
+        {
+            return apiResponse.PublicHolidays.Select(publicHoliday => new PublicHolidayDto
+            {
+                Id = publicHoliday.Id.ToGuid(),
+                Title = publicHoliday.Title,
+                AffectedDate = DateOnly.FromDateTime(publicHoliday.Date.ToDateTime()),
+            })
+                .ToList();
+        }
+        public static SaveUserDailyValuesRequest MapToSaveUserDailyValuesRequest(SaveUserDailyValuesRequest_M input)
+        {
+            if (input == null) throw new ArgumentNullException(nameof(input));
+
+            var req = new SaveUserDailyValuesRequest
+            {
+                CorrelationId = input.CorrelationId,
+                UserId = input.UserId,
+                TeamId = input.TeamId,
+                ShrinkageDate = Timestamp.FromDateTime(DateTime.SpecifyKind(input.ShrinkageDate.ToDateTime(TimeOnly.MinValue), DateTimeKind.Utc)),
+                Status = input.Status.ToGrpcStatus(),
+            };
+
+            if (input.Overtime.HasValue)
+            {
+                req.Overtime = Duration.FromTimeSpan(input.Overtime.Value);
+            }
+            else if (input.VacationTime.HasValue)
+            {
+                req.Vacation = Duration.FromTimeSpan(input.VacationTime.Value);
+            }
+            else if (input.PaidTimeOff.HasValue)
+            {
+                req.PaidTimeOff = Duration.FromTimeSpan(input.PaidTimeOff.Value);
+            }
+
+            return req;
+        }
+
     }
 }
 
