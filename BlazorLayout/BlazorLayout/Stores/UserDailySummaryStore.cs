@@ -125,6 +125,34 @@ public sealed partial class UserDailySummaryStore : StoreBase
         Summaries = list.OrderByDescending(x => x.Date).ToArray();
     }
 
+    public void UpdateStatus(Guid id, StatusDto newStatus)
+    {
+        var index = __Summaries.FindIndex(x => x.Id == id) ?? Utils.Unreachable<int>();
+
+        var list = __Summaries.ToArray();
+
+#if DEBUG
+        Utils.Assert(!list[(index + 1)..].Any(x => x.Id == id));
+#endif
+
+        var item = list[index];
+
+        if (item is not { AbsenceType: AbsenceTypeDto.Unspecified })
+        {
+            return;
+        }
+
+        if (item.Date <= displayStartDate && item.Status == StatusDto.Transferred)
+        {
+            Summaries = __Summaries.ExceptAt(index);
+        }
+        else
+        {
+            item = item with { Status = newStatus };
+            list[index] = item;
+            Summaries = list;
+        }
+    }
     public void UpdateIdBasedOnDate(Guid id, DateOnly date)
     {
         var index = __Summaries.FindIndex(x => x.Date == date) ?? Utils.Unreachable<int>();

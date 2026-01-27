@@ -220,6 +220,41 @@ namespace DataAccess.CRUD.Mapper
             })
                 .ToList();
         }
+
+        public static SaveUsersShrinkageStatusesRequest MapToSaveUsersShrinkageStatusesRequest(
+        SaveUsersShrinkageStatusRequest_M input)
+        {
+            if (input is null)
+                throw new ArgumentNullException(nameof(input));
+
+            if (input.CorrelationId == Guid.Empty)
+                throw new ArgumentException("CorrelationId is required.", nameof(input.CorrelationId));
+
+            if (input.DailyValueStatuses is null || input.DailyValueStatuses.Count == 0)
+                throw new ArgumentException("DailyValueStatuses must not be null or empty.", nameof(input.DailyValueStatuses));
+
+            var request = new SaveUsersShrinkageStatusesRequest
+            {
+                CorrelationId = input.CorrelationId,
+            };
+
+            foreach (var item in input.DailyValueStatuses)
+            {
+                if (item.DailyValuesId == Guid.Empty || item.UserId == Guid.Empty)
+                    throw new ArgumentException("Each item must have non-empty DailyValuesId and UserId.", nameof(input.DailyValueStatuses));
+
+                request.DailyValueStatuses.Add(new DailyValuesStatus
+                {
+                    DailyValuesId = item.DailyValuesId,
+                    UserId = item.UserId,
+                    Status = item.Status.ToGrpcStatus(),
+                    Comment = item.Comment ?? string.Empty,
+                });
+            }
+
+            return request;
+        }
+
         public static SaveUserDailyValuesRequest MapToSaveUserDailyValuesRequest(SaveUserDailyValuesRequest_M input)
         {
             if (input == null) throw new ArgumentNullException(nameof(input));

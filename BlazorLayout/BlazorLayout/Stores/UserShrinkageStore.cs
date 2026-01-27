@@ -129,6 +129,35 @@ public sealed partial class UserShrinkageStore : StoreBase
 
     }
 
+    public void UpdateUserDailyValueStatus(IReadOnlyList<UserDailyValueStatus_M> dailyValueStatuses)
+    {
+        foreach (var dailyValueStatus in dailyValueStatuses)
+        {
+            if (!__UsersShrinkages.TryGetValue(dailyValueStatus.UserId, out var userShrinkages))
+                throw new InvalidOperationException("User shrinkage for this user were not initialized");
+
+            var shrinkage = userShrinkages.Values
+                .FirstOrDefault(v => v.UserDailyValues?.Id == dailyValueStatus.DailyValuesId);
+
+            if (shrinkage == null)
+                throw new InvalidOperationException("User shrinkage for this shrinkage date were not initialized");
+
+            if (shrinkage.UserDailyValues is null)
+                throw new InvalidOperationException("UserDailyValues not loaded for this date.");
+
+            shrinkage = shrinkage with
+            {
+                UserDailyValues = shrinkage.UserDailyValues with { Status = dailyValueStatus.Status, Comment = dailyValueStatus.Comment },
+            };
+            UsersShrinkages = new Dictionary<Guid, IReadOnlyDictionary<DateOnly, UserShrinkageDto>>(__UsersShrinkages)
+            {
+                [dailyValueStatus.UserId] = new Dictionary<DateOnly, UserShrinkageDto>(userShrinkages)
+                {
+                    [shrinkage.UserDailyValues.ShrinkageDate] = shrinkage,
+                },
+            };
+        }
+    }
     public void UpdateUserDailyValue(SaveUserDailyValuesRequest_M dailyValue)
     {
         if (!__UsersShrinkages.TryGetValue(dailyValue.UserId, out var userShrinkages))

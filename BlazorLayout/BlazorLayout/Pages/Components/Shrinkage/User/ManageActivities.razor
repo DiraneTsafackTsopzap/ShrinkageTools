@@ -1,6 +1,7 @@
 ﻿
 @using BlazorLayout.Enums
 @using BlazorLayout.Pages.Components.Shared
+@using BlazorLayout.Pages.Components.Shrinkage.ReusableComponents
 @using BlazorLayout.Shared
 @using BlazorLayout.StateManagement
 @using BlazorLayout.Utilities
@@ -118,9 +119,9 @@
                                                                 OnWarning="HandleWarning"
                                                                 OnErrorStateChanged="HandleError"
                                                                 ShrinkageDate="@ShrinkageDate"
-                                                            IsSummaryLocked="@IsSummaryLocked"
-                                                            OnActivityEditingChanged="HandleActivityEditingChanged"
-                                                            DefaultTeamId="State.CurrentUser!.TeamId!.Value"
+                                                                IsSummaryLocked="@IsUiLocked"
+                                                                OnActivityEditingChanged="HandleActivityEditingChanged"
+                                                                DefaultTeamId="State.CurrentUser!.TeamId!.Value"
                                                                 UserActivities="@UserActivities" />
                                                                 
                                                                 
@@ -148,10 +149,16 @@
                                          OnSave="HandleSaveActivity" />
       
                                 <div class="d-flex justify-content-end mt-3">
-                                    <button 
+                                    @* <button 
                                              class="btn btn-outline-dark fixed-btn">
                                         
-                                    </button>
+                                    </button> *@
+                                    <IconButton OnClick="@SubmitShrinkageStatus"
+                                                Disabled="@(IsReadOnly || IsSummaryLocked || isSummaryEditing || isActivityEditing)"
+                                                CssClass="btn btn-outline-dark btn-sm fixed-btn">
+                                        @GetStatusToDisplay(displayStatus)
+                                    </IconButton>
+                                   
                                 </div>
                            }
                         </fieldset> 

@@ -9,6 +9,7 @@ namespace DataAccess.CRUD.Repositories.UserDailyRepository
 {
     public interface IShrinkageUserDailyValuesRepository
     {
+        Task<int> UpdateStatusAndCommentById(ShrinkageUserDailyValuesDataModel model, CancellationToken token);
         Task<int> Create(ShrinkageUserDailyValuesDataModel dailyValue, CancellationToken token);
         Task<int> DeleteById(ShrinkageUserDailyValuesDataModel model, CancellationToken token);
 

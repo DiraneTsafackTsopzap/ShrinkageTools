@@ -954,6 +954,41 @@ namespace DataAccess.CRUD.Services
             return new GetPublicHolidaysByTeamIdResponse { PublicHolidays = { publicHolidays.Select(x => new PublicHoliday { Id = x.Id, Title = x.Title, Date = NormalizeUtc(x.AffectedDay.ToDateTime(TimeOnly.MinValue)).ToTimestamp(), }) } };
         }
 
+        // SaveUsersShrinkageStatuses
+
+        public override async Task<SaveUsersShrinkageStatusesResponse> SaveUsersShrinkageStatuses(SaveUsersShrinkageStatusesRequest request, ServerCallContext context)
+        {
+            if (request.DailyValueStatuses.Count == 0)
+            {
+                throw RpcExceptions.InvalidArgument($"Error with correlation id {request.CorrelationId} request or daily value statuses must not be null or empty.");
+            }
+
+            foreach (var item in request.DailyValueStatuses)
+            {
+                if (!item.DailyValuesId.TryParseToGuidNotNullOrEmpty(out var id) || item.Status == Status.Unspecified)
+                {
+                    throw RpcExceptions.InvalidArgument($"Error with correlation id {request.CorrelationId} invalid request for Id : {id}");
+                }
+
+                var model = new ShrinkageUserDailyValuesDataModel
+                {
+                    Id = id,
+                    Status = item.Status.ConvertFromApiStatus(),
+                    Comment = item.Comment,
+                    UpdatedAt = DateTime.UtcNow.ConvertUtcToGermanDateTime(),
+                    UpdatedBy = item.UserId.ToGuid(),
+                };
+                var updatedRows = await _shrinkageUserDailyValuesRepository.UpdateStatusAndCommentById(model, context.CancellationToken);
+
+                if (updatedRows == 0)
+                {
+                    throw RpcExceptions.NotFound($"Error with correlation id {request.CorrelationId} no record found with ID {id} to update.");
+                }
+            }
+
+            return new SaveUsersShrinkageStatusesResponse();
+        }
+
     }
 }
 

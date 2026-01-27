@@ -6,6 +6,7 @@ using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using GrpcShrinkageServiceTraining.Protobuf;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using System;
 
@@ -547,6 +548,56 @@ namespace ShrinkageGrpcClientApi.Controllers
             }
         }
 
+
+        // save-users-shrinkage-status
+       // POST http://localhost:5000/api/shrinkage/save-users-shrinkage-status
+       /// <summary>
+       ///    {
+      ///"correlationId": "e4d1a00f-3f56-44cf-85b9-5f5f4148a301",
+  ///"dailyValueStatuses": [
+   /// {
+    ///  "dailyValuesId": "59960b95-67d9-4f67-bd27-9be54776ab8b",
+    ///  "userId": "b4e5c1a9-8f72-4d6b-9a1c-3e7f5d0b2a66",
+     /// "status": 2,
+     /// "comment": "User daily values transferred"
+    ///}
+  ///]
+///}
+/// </summary>
+/// <param name="input"></param>
+/// <param name="cancellationToken"></param>
+/// <returns></returns>
+/// <exception cref="BadHttpRequestException"></exception>
+
+[HttpPost("save-users-shrinkage-status")]
+        public async Task SaveUsersShrinkageStatuses([FromBody] SaveUsersShrinkageStatusRequest_M input, CancellationToken cancellationToken)
+        {
+            using var __ = logger.BeginScope(new Dictionary<string, object>
+            {
+                ["@Request"] = input,
+            });
+            try
+            {
+                var grpcRequest = GrpcMapper.MapToSaveUsersShrinkageStatusesRequest(input);
+
+                await _grpcClient.SaveUsersShrinkageStatusesAsync(grpcRequest, cancellationToken: cancellationToken);
+            }
+            catch (RpcException ex) when (ex.StatusCode == global::Grpc.Core.StatusCode.InvalidArgument)
+            {
+                logger.LogError(ex, "Failed to save users shrinkage statuses");
+                throw new BadHttpRequestException(ex.Message, StatusCodes.Status400BadRequest);
+            }
+            catch (RpcException ex) when (ex.StatusCode == global::Grpc.Core.StatusCode.NotFound)
+            {
+                logger.LogError(ex, "Failed to save users shrinkage statuses");
+                throw new BadHttpRequestException(ex.Message, StatusCodes.Status404NotFound);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Failed to save users shrinkage statuses");
+                throw new BadHttpRequestException("Failed to save users shrinkage statuses", StatusCodes.Status500InternalServerError, ex);
+            }
+        }
     }
 }
 

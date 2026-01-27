@@ -2,6 +2,7 @@
 using BlazorLayout.Extensions;
 using BlazorLayout.Gateways;
 using BlazorLayout.Modeles;
+using BlazorLayout.ModelRequest;
 using BlazorLayout.Shared;
 using BlazorLayout.Stores;
 using BlazorLayout.Utilities;
@@ -49,19 +50,23 @@ namespace BlazorLayout.Pages.Components.Shrinkage.User
         private bool isLoading;
         public UserShrinkageDto? UserShrinkage { get; init; }
         private UserShrinkageDto? userShrinkage;
-        private static StatusDto displayStatus = StatusDto.Open;
+        private static  StatusDto displayStatus = StatusDto.Open;
         private Guid? currentDailyValuesId;
         private SystemDateOnly ShrinkageDate { get; set; } = SystemDateOnly.FromDateTime(DateTime.UtcNow);
         private string DayNameDe => ShrinkageDate.GetDayName();
 
         private bool IsReadOnly => (displayStatus is StatusDto.Transferred or StatusDto.Approved) || !string.IsNullOrWhiteSpace(errorMessage);
+  
+
         private bool isTimerRunning;
         private bool isSummaryEditing;
 
 
         private bool IsSummaryLocked => isTimerRunning || isSummaryEditing;
+        [Parameter, EditorRequired]
+        public bool ShowLastThirtyDays { get; set; }
 
-
+        private List<UserDailySummaryDto> filteredSummary = [];
 
         private TimeSpan userPaidTime = TimeSpan.Zero;
         private TimeSpan userOvertime = TimeSpan.Zero;
@@ -69,6 +74,9 @@ namespace BlazorLayout.Pages.Components.Shrinkage.User
         private TimeSpan userPaidTimeOff = TimeSpan.Zero;
         private string? comment;
         private const int Timeout = 30_000;
+
+        private bool IsUiLocked => IsReadOnly || IsSummaryLocked;
+
         public sealed record StateT
         {
             public UserDto? CurrentUser { get; init; }
@@ -96,9 +104,18 @@ namespace BlazorLayout.Pages.Components.Shrinkage.User
             await base.OnInitializedAsync();
 
             await GetUserDailySummary(false);
+            ResetFilteredSummary();
+
+            //ShrinkageDate = filteredSummary.First().Date;
+            var today = SystemDateOnly.FromDateTime(DateTime.Today);
+
+            ShrinkageDate = filteredSummary.Any(x => x.Date == today)
+                ? today
+                : filteredSummary.OrderByDescending(x => x.Date).First().Date;
+
             ExtensionsHelper.Localizer = Localizer;
 
-            SelectedDailySummaryRow = State.Summaries.FirstOrDefault(x => x.Date == ShrinkageDate);
+        
 
             
             if (TimerService.CurrentActivity is { StoppedAt: null } active)
@@ -275,7 +292,55 @@ namespace BlazorLayout.Pages.Components.Shrinkage.User
             isTimerRunning = timerStarted;
             StateHasChanged();
         }
+       
+        private async Task SubmitShrinkageStatus()
+        {
+            warningMessage = null;
+            errorMessage = null;
+            isSummaryEditing = true;
 
+            const StatusDto status = StatusDto.Transferred;
+            try
+            {
+                if (UserActivities.Any(x => x is { StoppedAt: null }))
+                {
+                    warningMessage = Localizer["shrinkage_warning_incomplete_activity"];
+                    isSummaryEditing = false;
+                    return;
+                }
+
+                if (!currentDailyValuesId.HasValue || currentDailyValuesId == Guid.Empty)
+                {
+                    errorMessage = Localizer["shrinkage_warning_no_daily_values"];
+                    isSummaryEditing = false;
+                    return;
+                }
+
+                var request = new UserDailyValueStatus_M
+                {
+                    DailyValuesId = currentDailyValuesId.Value,
+                    UserId = State.CurrentUser!.UserId,
+                    Status = status,
+                    Comment = userShrinkage?.UserDailyValues?.Comment,
+                };
+
+                await ShrinkageApi.SaveUsersShrinkageStatusAsync([request], TimeoutToken(Timeout));
+                displayStatus = status;
+
+                UserDailySummaryStore.UpdateStatus(currentDailyValuesId.Value, status);
+                isSummaryEditing = false;
+              //  ResetFilteredSummary();
+              //  await ResetShrinkageDateAndSelection();
+            }
+            catch (OperationCanceledException) when (IsDisposing) { }
+
+            catch (Exception ex)
+            {
+                errorMessage = Localizer["shrinkage_error_save_user_shrinkage_status"];
+                if (ex.InnerException is HttpRequestException ex2 && ex2.GetReasonMessage(ex) is { } reason)
+                    errorMessage += " " + reason;
+            }
+        }
         private void HandleSummaryChanged(bool isSummaryChanged)
         {
             isSummaryEditing = isSummaryChanged;
@@ -346,6 +411,39 @@ namespace BlazorLayout.Pages.Components.Shrinkage.User
                 if (ex.InnerException is HttpRequestException ex2 && ex2.GetReasonMessage(ex) is { } reason)
                     errorMessage += " " + reason;
             }
+        }
+
+        private async Task ResetShrinkageDateAndSelection()
+        {
+            if (!filteredSummary.Any(x => x.Date == ShrinkageDate))
+            {
+                ShrinkageDate = filteredSummary.OrderByDescending(x => x.Date).First().Date;
+                SelectedDailySummaryRow = filteredSummary.First(x => x.Date == ShrinkageDate);
+                await LoadUserShrinkageForDateAsync(ShrinkageDate, false);
+            }
+        }
+
+        private string GetStatusToDisplay(StatusDto status) => status switch
+        {
+            StatusDto.Transferred => Localizer["shrinkage_button_transferred"],
+            StatusDto.Approved => Localizer["shrinkage_button_approved"],
+            _ => Localizer["shrinkage_button_transfer"],
+        };
+        private void ResetFilteredSummary()
+        {
+            filteredSummary = State.Summaries.ToList();
+            StateHasChanged();
+
+            //if (ShowLastThirtyDays)
+            //{
+            //    filteredSummary = State.Summaries.Where(x => x.Date >= SystemDateOnly.FromDateTime(DateTime.Today.AddDays(-30))).ToList();
+            //}
+            //else
+            //{
+            //    filteredSummary = State.Summaries.Where(x => x.Status == StatusDto.Open || x.Status == StatusDto.Rejected).ToList();
+            //}
+
+            //StateHasChanged();
         }
     }
 }

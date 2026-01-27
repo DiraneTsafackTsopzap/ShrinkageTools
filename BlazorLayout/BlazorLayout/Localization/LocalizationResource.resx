@@ -207,8 +207,11 @@
   <data name="shrinkage_button_stop" xml:space="preserve">
     <value>Stop</value>
   </data>
+  <data name="shrinkage_button_transfer" xml:space="preserve">
+    <value>Übermitteln</value>
+  </data>
   <data name="shrinkage_button_transferred" xml:space="preserve">
-    <value>Transferred</value>
+    <value>Übermittelt</value>
   </data>
   <data name="shrinkage_button_update" xml:space="preserve">
     <value>Bearbeiten</value>
@@ -254,6 +257,9 @@
   </data>
   <data name="shrinkage_error_save_user_daily_value_conflict" xml:space="preserve">
     <value>Failed to save user daily values. Conflict. User has an active absence for this date.</value>
+  </data>
+  <data name="shrinkage_error_save_user_shrinkage_status" xml:space="preserve">
+    <value>Failed to save user shrinkage status.</value>
   </data>
   <data name="shrinkage_error_unexpected" xml:space="preserve">
     <value>Unexpected error occured</value>
@@ -378,11 +384,17 @@
   <data name="shrinkage_warning_future_date" xml:space="preserve">
     <value>No bookings may be made for the future.</value>
   </data>
+  <data name="shrinkage_warning_incomplete_activity" xml:space="preserve">
+    <value>Submitting with incomplete activities is not possible.</value>
+  </data>
   <data name="shrinkage_warning_invalid_time_format" xml:space="preserve">
     <value>Invalid format (hh:mm). Example: 01:00.</value>
   </data>
   <data name="shrinkage_warning_not_valid_time_span_D" xml:space="preserve">
     <value>The maximum allowed time you can enter for {0} is {1} hours.</value>
+  </data>
+  <data name="shrinkage_warning_no_daily_values" xml:space="preserve">
+    <value>The daily values for today could not be found..</value>
   </data>
   <data name="shrinkage_warning_no_teams" xml:space="preserve">
     <value>No teams loaded</value>

@@ -238,6 +238,32 @@ WHERE id = @Id;
             return await connection.ExecuteAsync(sql, parameters);
         }
 
+        public async Task<int> UpdateStatusAndCommentById(ShrinkageUserDailyValuesDataModel model, CancellationToken token)
+        {
+            const string sql = @$"
+UPDATE shrinkage_user_daily_values
+SET
+    status     = @Status,
+    comment    = @Comment,
+    updated_at = @UpdatedAt,
+    updated_by = @UpdatedBy
+WHERE id = @Id;
+";
+
+            var parameters = new
+            {
+                model.Id,
+                model.Status,
+                model.Comment,
+                model.UpdatedAt,
+                model.UpdatedBy
+            };
+
+            await using var connection = await GetOpenConnectionAsync(token);
+
+            return await connection.ExecuteAsync(sql, parameters);
+        }
+
 
     }
 }

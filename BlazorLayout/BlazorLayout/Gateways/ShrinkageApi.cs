@@ -588,6 +588,43 @@ namespace BlazorLayout.Gateways
                 throw new SaveUserDailyValuesException(ex, request.CorrelationId);
             }
         }
+
+
+        public async Task SaveUsersShrinkageStatusAsync(IReadOnlyList<UserDailyValueStatus_M> shrinkageStatus, CancellationToken cancellationToken)
+        {
+            var correlationId = Guid.NewGuid();
+            using var __ = logger.BeginScope(new Dictionary<string, object>
+            {
+                ["@ShrinkageStatus"] = shrinkageStatus,
+                ["CorrelationId"] = correlationId,
+            });
+            try
+            {
+                var request = new SaveUsersShrinkageStatusRequest_M
+                {
+                    CorrelationId = correlationId,
+                    DailyValueStatuses = shrinkageStatus,
+                };
+                await HttpClient.PostAsJsonAsync("api/shrinkage/save-users-shrinkage-status", request, cancellationToken);
+                userShrinkageStore.UpdateUserDailyValueStatus(shrinkageStatus);
+            }
+            catch (HttpRequestException ex) when (ex is { StatusCode: HttpStatusCode.BadRequest })
+            {
+                logger.LogError(ex, "Failed to save user shrinkage statuses.");
+                throw new BadRequestException(ex, correlationId);
+            }
+            catch (HttpRequestException ex) when (ex is { StatusCode: HttpStatusCode.NotFound })
+            {
+                logger.LogError(ex, "Failed to save user shrinkage statuses.");
+                throw new NotFoundException(ex, correlationId);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Failed to save user shrinkage statuses.");
+                throw new SaveUserShrinkageStatusException(ex, correlationId);
+            }
+        }
+
     }
 }
 

@@ -41,9 +41,12 @@ service ShrinkageProtoService {
     //9- Save Daily Values of the user
       rpc SaveUserDailyValues(SaveUserDailyValuesRequest) returns (SaveUserDailyValuesResponse) {}
 
-      //10- Fetch public Holidays by Team id
-        // Fetch public holidays by team id.
+   //10- Fetch public Holidays by Team id // Fetch public holidays by team id.
   rpc GetPublicHolidaysByTeamId(GetPublicHolidaysByTeamIdRequest) returns (GetPublicHolidaysByTeamIdResponse) {}
+
+  //11-   // Save shrinkage status for users.
+  rpc SaveUsersShrinkageStatuses(SaveUsersShrinkageStatusesRequest) returns (SaveUsersShrinkageStatusesResponse) {}
+
 
     
 }
@@ -380,6 +383,24 @@ message PublicHoliday {
   google.protobuf.Timestamp date = 3;
 }
 
+message SaveUsersShrinkageStatusesResponse {
+}
+message DailyValuesStatus {
+ 
+  AppUuid daily_values_id = 1;
+
+  Status status = 2;
+
+  AppUuid user_id = 3;
+
+  string comment = 4;
+}
+message SaveUsersShrinkageStatusesRequest {
+
+  AppUuid correlation_id = 1;
+ 
+  repeated DailyValuesStatus daily_value_statuses = 2;
+}
 
 
 // 3- Definir les autres Messages necessaires et 

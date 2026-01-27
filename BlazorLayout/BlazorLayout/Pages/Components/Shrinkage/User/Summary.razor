@@ -75,9 +75,9 @@
                 </InputContent>
 
                 <ActionsContent>
-                  
-                   
-                    <ButtonPopover Disabled="@( AnySummaryEditing|| IsTimerActive)"
+
+
+                <ButtonPopover Disabled="@(AnySummaryEditing || IsTimerActive || IsReadOnly)"
                                    Placement="right"
                                    data-content-id="popover-paid-time-off" />
 
@@ -87,7 +87,7 @@
 
                         <IconButton OnClick="@StartEditPaid"
                                     ButtonType="button"
-                                    Disabled="@(AnySummaryEditing || IsTimerActive)"
+                                Disabled="@(AnySummaryEditing || IsTimerActive || IsReadOnly)"
                                     CssClass="btn btn-outline-dark btn-sm fixed-btn">
                             @Localizer["shrinkage_button_update"]
                         </IconButton>
@@ -119,9 +119,9 @@
                 </InputContent>
 
                 <ActionsContent>
-                    
 
-                    <ButtonPopover Disabled="@(IsTimerActive || AnySummaryEditing)"
+
+                <ButtonPopover Disabled="@(IsTimerActive || AnySummaryEditing || IsReadOnly)"
                                    Placement="right"
                                    data-content-id="popover-overtime" />
 
@@ -131,7 +131,7 @@
 
                         <IconButton OnClick="@StartEditOvertime"
                                     ButtonType="button"
-                                    Disabled="@(AnySummaryEditing || IsTimerActive)"
+                                Disabled="@(AnySummaryEditing || IsTimerActive ||IsReadOnly)"
                                     CssClass="btn btn-outline-dark btn-sm fixed-btn">
                             @Localizer["shrinkage_button_update"]
                         </IconButton>
@@ -168,14 +168,14 @@
 
                     <ButtonPopover 
                                    Placement="right"
-                                   Disabled="@(AnySummaryEditing || IsTimerActive)"
+                               Disabled="@(AnySummaryEditing || IsTimerActive || IsReadOnly)"
                                    data-content-id="popover-vacation_time" />
 
                     @if (!isEditingVacationTime)
                     {
                         <IconButton OnClick="@StartEditVacationTime"
                                     ButtonType="button"
-                                    Disabled="@(AnySummaryEditing || IsTimerActive)"
+                                Disabled="@(AnySummaryEditing || IsTimerActive || IsReadOnly)"
                                     CssClass="btn btn-outline-dark btn-sm fixed-btn">
                             @Localizer["shrinkage_button_update"]
                         </IconButton>
@@ -237,7 +237,7 @@
 
                         <ButtonPopover 
                                        Placement="right"
-                                       Disabled="@(AnySummaryEditing || IsTimerActive)"
+                                   Disabled="@(AnySummaryEditing || IsTimerActive || IsReadOnly)"
                                        data-content-id="@popoverId" />
 
                         @if (!isTimerRunning)
@@ -273,7 +273,7 @@
                 </InputContent>
 
                 <ActionsContent>
-                    <ButtonPopover Disabled="@(AnySummaryEditing || IsTimerActive)"
+                <ButtonPopover Disabled="@(AnySummaryEditing || IsTimerActive || IsReadOnly)"
                                    Placement="right"
                                    data-content-id="popover-loan" />
                 </ActionsContent>
